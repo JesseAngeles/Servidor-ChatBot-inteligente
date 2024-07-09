@@ -1,2 +1,5 @@
 node_modules
 .env
+dataset/.ipynb_checkpoints
+dataset/text.csv
+dataset/model.csv
