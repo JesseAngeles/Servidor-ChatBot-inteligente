@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import users from "../Models/User";
-import { phoneValidation } from "./Validation";
+import { createSelectString, phoneValidation } from "./Validation";
 
 const availableFields = { _id: true, name: true, phone: true };
 const defaultSelectString = '_id name phone';
@@ -27,7 +27,7 @@ export const add = async (req: Request, res: Response) => {
 export const getAll = async (req: Request, res: Response) => {
     try {
         const fields = req.body.fields;
-        const select = createSelectString(fields);
+        const select = createSelectString(fields, availableFields, defaultSelectString);
 
         const allUsers = await users.find().select(select);
         return res.status(200).json(allUsers);
@@ -44,7 +44,7 @@ export const getUser = async (req: Request, res: Response) => {
         if (!id) return res.status(400).send('Missing required fields');
     
         const fields = req.body.fields;
-        const select = createSelectString(fields);
+        const select = createSelectString(fields, availableFields, defaultSelectString);
 
         const user = await users.findById(id).select(select);
         if (!user) return res.status(404).send('User not found');
@@ -95,19 +95,4 @@ export const drop = async (req: Request, res: Response) => {
         console.error(`Error (Controllers/user/drop): ${error}`);
         return res.status(500).send(`Server error: ${error}`);
     }
-}
-
-function createSelectString(required: Record<string, any> | undefined): string {
-    let select = "";
-    if (required) {
-        for (const field in required) {
-            if (required[field] && availableFields.hasOwnProperty(field)) {
-                select += field + " ";
-            }
-        }
-    }
-
-    if (!select) return defaultSelectString;
-    
-    return select.trim();
 }
