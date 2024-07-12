@@ -1,25 +1,48 @@
 import express from 'express';
-import connectDB from './DatabaseConnection';
-import cors from 'cors';    //* Permite conectarse desde diferentes tecnologias
+import cors from 'cors';
 import dotenv from 'dotenv';
-//TODO Añadir rutas
+
+import connectDB from './DatabaseConnection';
+
+import { processCSV } from './Controllers/Bayes';
+
+//TODO importar rutas
 import routerUser from './Routes/User';
 import routerAccount from './Routes/Character';
 
 dotenv.config();
-
 connectDB();
 
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT || 8080;
 
+// Arreglo para almacenar los datos del CSV
+let bayesData: any[] = [];
+
+export function getBayesData(): any[] { return bayesData; }
+
+// Cargar los datos del CSV al iniciar el servidor
+processCSV("src/Resources/model.csv")
+    .then((data) => {
+        bayesData = data;
+        console.log("CSV data loaded successfully");
+    })
+    .catch((error) => {
+        console.error("Error loading CSV data:", error);
+    });
+
+// Middleware
 app.use(express.json());
 app.use(cors());
 
-//TODO definición de rutas
+//TODO Rutas
 app.use('/user', routerUser);
 app.use('/account', routerAccount);
+app.get('/model-data', (req, res) => {
+    res.json(bayesData);
+});
 
+// Iniciar el servidor
 app.listen(port, () => {
-    console.log(`Server active un port: ${port}`);
+    console.log(`Server active on port: ${port}`);
 });

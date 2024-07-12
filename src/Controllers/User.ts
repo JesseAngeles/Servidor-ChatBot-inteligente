@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import users from "../Models/User";
 import { createSelectString, phoneValidation } from "./Validation";
+import { testMessage } from "./Bayes";
 
 const availableFields = { _id: true, name: true, phone: true };
 const defaultSelectString = '_id name phone';
@@ -42,7 +43,7 @@ export const getUser = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
         if (!id) return res.status(400).send('Missing required fields');
-    
+
         const fields = req.body.fields;
         const select = createSelectString(fields, availableFields, defaultSelectString);
 
@@ -61,7 +62,7 @@ export const update = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
         if (!id) return res.status(400).send('Missing required fields');
-        
+
         const user = await users.findById(id).select(defaultSelectString);
         if (!user) return res.status(404).send("User not found");
 
@@ -94,5 +95,17 @@ export const drop = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(`Error (Controllers/user/drop): ${error}`);
         return res.status(500).send(`Server error: ${error}`);
+    }
+}
+
+//! Probar mensaje
+export const test = async (req: Request, res: Response) => {
+    try {
+        const { message } = req.body;
+        const bayesTest = testMessage(message);
+        return res.status(200).json(bayesTest);
+    } catch (error) {
+        console.log("Error", error);
+        return res.status(500).send('Error en prueba test: ' + error);
     }
 }
