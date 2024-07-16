@@ -1,26 +1,78 @@
-import { Account } from "../Interfaces/Account";
+import { Account, Condition, State, Transition, ConversationFlow } from "../Interfaces/Account";
 import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
-const account = new Schema<Account>({
+const conditionSchema = new Schema<Condition>({
     name: {
-        type: String,
+        type: Schema.Types.String,
         required: true
     },
-    context: {
-        type: String,
-        required: true
-    },
-    campaign: {
-        type: String,
-        required: true
-    },
-    phone: {
-        type: String,
-        unique: true,
+    value: {
+        type: Schema.Types.Mixed,
         required: true
     }
 });
 
-export default mongoose.model<Account>('accounts', account);
+const stateSchema = new Schema<State>({
+    name: {
+        type: Schema.Types.String,
+        required: true
+    }
+});
+
+const transitionSchema = new Schema<Transition>({
+    exit: {
+        type: stateSchema,
+        required: true
+    },
+    arrival: {
+        type: stateSchema,
+        required: true
+    },
+    condition: {
+        type: [conditionSchema],
+        required: false
+    }
+});
+
+const conversationFlowSchema = new Schema<ConversationFlow>({
+    conditions: {
+        type: [conditionSchema],
+        required: true
+    },
+    states: {
+        type: [stateSchema],
+        required: true
+    },
+    transitions: {
+        type: [transitionSchema],
+        required: true
+    }
+});
+
+const accountSchema = new Schema<Account>({
+    name: {
+        type: Schema.Types.String,
+        required: true
+    },
+    context: {
+        type: Schema.Types.String,
+        required: true
+    },
+    campaign: {
+        type: Schema.Types.String,
+        required: true
+    },
+    phone: {
+        type: Schema.Types.String,
+        unique: true,
+        required: true
+    },
+    conversationFlow: {
+        type: conversationFlowSchema,
+        required: false
+    }
+});
+
+export default mongoose.model<Account>('accounts', accountSchema);
