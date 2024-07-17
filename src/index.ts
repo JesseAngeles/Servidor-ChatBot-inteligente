@@ -8,7 +8,8 @@ import { processCSV } from './Controllers/Bayes';
 
 //TODO importar rutas
 import routerUser from './Routes/User';
-import routerAccount from './Routes/Character';
+import routerAccount from './Routes/Account';
+import routerConversationFlow from './Routes/ConversationFlow';
 
 dotenv.config();
 connectDB();
@@ -38,9 +39,7 @@ app.use(cors());
 //TODO Rutas
 app.use('/user', routerUser);
 app.use('/account', routerAccount);
-app.get('/model-data', (req, res) => {
-    res.json(bayesData);
-});
+app.use('/conversationFlow', routerConversationFlow);
 
 // Iniciar el servidor
 app.listen(port, () => {

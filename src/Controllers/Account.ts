@@ -9,10 +9,12 @@ const defaultSelectString = "_id name campaign phone";
 export const add = async (req: Request, res: Response) => {
     try {
         const { name, context, campaign, phone } = req.body;
+        const conversationFlow = Object(null);
+        
         if (!name || !phone) return res.status(400).send('Missing required fields');
         if (!phoneValidation(phone)) return res.status(400).send('Invalid phone format');
 
-        const newAccount = new accounts({ name, context, campaign, phone });
+        const newAccount = new accounts({ name, context, campaign, phone, conversationFlow });
         const addAccount = await newAccount.save();
         const accountReturn = await accounts.findById(addAccount._id).select(defaultSelectString);
 

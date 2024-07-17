@@ -1,6 +1,6 @@
 export interface Condition {
     name: string;
-    value: any;
+    values: [any];
 }
 
 export interface State {

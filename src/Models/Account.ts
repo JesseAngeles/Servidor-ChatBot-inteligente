@@ -5,13 +5,13 @@ const { Schema } = mongoose;
 
 const conditionSchema = new Schema<Condition>({
     name: {
-        type: Schema.Types.String,
+        type: String,
         required: true
     },
-    value: {
+    values: [{
         type: Schema.Types.Mixed,
         required: true
-    }
+    }]
 });
 
 const stateSchema = new Schema<State>({
