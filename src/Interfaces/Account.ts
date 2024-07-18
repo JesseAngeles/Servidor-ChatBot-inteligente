@@ -1,22 +1,23 @@
 export interface Condition {
     name: string;
-    values: [any];
+    values: any[];
 }
 
 export interface State {
     name: string;
+    description: string;
 }
 
 export interface Transition {
     exit: State;
     arrival: State;
-    condition: [Condition] | null;
+    condition: [Condition, number] | null;
 }
 
 export interface ConversationFlow {
-    conditions: [Condition];
-    states: [State];
-    transitions: [Transition];
+    conditions: Condition[];
+    states: State[];
+    transitions: Transition[];
 }
 
 export interface Account {

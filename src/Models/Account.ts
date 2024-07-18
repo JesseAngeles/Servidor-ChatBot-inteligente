@@ -18,6 +18,10 @@ const stateSchema = new Schema<State>({
     name: {
         type: Schema.Types.String,
         required: true
+    },
+    description: {
+        type: Schema.Types.String,
+        required: true
     }
 });
 
@@ -31,7 +35,16 @@ const transitionSchema = new Schema<Transition>({
         required: true
     },
     condition: {
-        type: [conditionSchema],
+        type: [
+            {
+                type: conditionSchema,
+                required: true
+            },
+            {
+                type: Schema.Types.Number,
+                required: true
+            }
+        ],
         required: false
     }
 });

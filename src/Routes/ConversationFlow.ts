@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { addConstraints } from "../Controllers/ConversationFlow";
+import { addConstraints, setTransitions, getConversation } from "../Controllers/ConversationFlow";
 
 const routerConversationFlow = Router();
 
-routerConversationFlow.post('/:id', addConstraints);
+routerConversationFlow.post('/constraints/:id', addConstraints);
+routerConversationFlow.post('/transitions/:id', setTransitions);
+routerConversationFlow.get('/:id', getConversation);
 
 export default routerConversationFlow;
