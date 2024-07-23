@@ -11,6 +11,7 @@ export interface State {
 }
 
 export interface Transition {
+    _id: any;
     exit: State;
     arrival: State;
     conditions: [Condition, number][] | null;
