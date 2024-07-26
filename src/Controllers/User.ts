@@ -1,36 +1,43 @@
 import { Request, Response } from "express";
 import users from "../Models/User";
-import { createSelectString, phoneValidation } from "./Validation";
 import { testMessage } from "./Bayes";
+import { idValidation, nameValidation, phoneValidation, emailValidation } from "../Middlewares/FieldValidation";
+import { createSelectString } from "../Middlewares/Functions";
 
-const availableFields = { _id: true, name: true, phone: true };
-const defaultSelectString = '_id name phone';
+const availableFields = { _id: true, name: true, phone: true, email: true };
+const defaultSelectString = '_id name phone email';
 
-//* Crear nuevo usuario 
+// Crear nuevo usuario 
 export const add = async (req: Request, res: Response) => {
     try {
-        const { name, phone } = req.body;
-        if (!name || !phone) return res.status(400).send('Missing required fields');
-        if (!phoneValidation(phone)) return res.status(400).send('Invalid phone format');
+        const name: string = req.body.name;
+        const phone: string = req.body.phone;
+        const email: string = req.body.email;
+        const fields = req.body.fields;
 
-        const newUser = new users({ name, phone });
+        if (!nameValidation(name) || !phoneValidation(phone) || emailValidation(email))
+            return res.status(400).send('Missing required fields');
+
+        const newUser = new users({ name, phone, email });
         const addUser = await newUser.save();
-        const userReturn = await users.findById(addUser._id).select(defaultSelectString);
+        const returnUser = await users.findById(addUser._id)
+            .select(createSelectString(fields, availableFields, defaultSelectString));
 
-        return res.status(201).json(userReturn);
+        return res.status(200).json(returnUser);
     } catch (error) {
         console.error(`Error (Controllers/user/add): ${error}`);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-//* Consultar todos los usuarios
+// Consultar todos los usuarios
 export const getAll = async (req: Request, res: Response) => {
     try {
         const fields = req.body.fields;
-        const select = createSelectString(fields, availableFields, defaultSelectString);
 
-        const allUsers = await users.find().select(select);
+        const allUsers = await users.find()
+            .select(createSelectString(fields, availableFields, defaultSelectString));
+
         return res.status(200).json(allUsers);
     } catch (error) {
         console.error(`Error (Controllers/user/getAll): ${error}`);
@@ -38,17 +45,20 @@ export const getAll = async (req: Request, res: Response) => {
     }
 }
 
-//* Consulta usuario por Id
+// Consulta usuario por Id
 export const getUser = async (req: Request, res: Response) => {
     try {
-        const id = req.params.id;
-        if (!id) return res.status(400).send('Missing required fields');
-
+        const id: String = req.params.id;
         const fields = req.body.fields;
-        const select = createSelectString(fields, availableFields, defaultSelectString);
 
-        const user = await users.findById(id).select(select);
-        if (!user) return res.status(404).send('User not found');
+        if (!idValidation)
+            return res.status(400).send('Missing required fields');
+
+        const user = await users.findById(id)
+            .select(createSelectString(fields, availableFields, defaultSelectString));
+
+        if (!user)
+            return res.status(404).send('User not found');
 
         return res.status(200).json(user);
     } catch (error) {
@@ -57,40 +67,51 @@ export const getUser = async (req: Request, res: Response) => {
     }
 }
 
-//* Actualizar la información por ID
+// Actualizar la información por ID
 export const update = async (req: Request, res: Response) => {
     try {
-        const id = req.params.id;
-        if (!id) return res.status(400).send('Missing required fields');
+        const id: string = req.params.id;
+        const name: string = req.body.name;
+        const phone: string = req.body.phone;
+        const email: string = req.body.email;
+        const fields = req.body.fields;
+
+        if (!idValidation(id))
+            return res.status(400).send('Missing required fields');
 
         const user = await users.findById(id).select(defaultSelectString);
-        if (!user) return res.status(404).send("User not found");
+        if (!user)
+            return res.status(404).send("User not found");
 
-        const { name, phone } = req.body;
-        if (name) user.name = name;
-        if (phone) {
-            if (!phoneValidation(phone)) return res.status(400).send('Invalid phone format');
-            user.phone = phone;
-        }
+        if (nameValidation(name)) user.name = name;
+        if (phoneValidation(phone)) user.phone = phone;
+        if (emailValidation(email)) user.email = email;
 
-        await user.save();
-        return res.status(200).json(user);
+        const updateUser = await user.save();
+        const returnUser = await users.findById(updateUser._id)
+            .select(createSelectString(fields, availableFields, defaultSelectString));
+
+        return res.status(200).json(returnUser);
     } catch (error) {
         console.error(`Error (Controllers/user/update): ${error}`);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-//* Eliminar información por ID
+// Eliminar información por ID
 export const drop = async (req: Request, res: Response) => {
     try {
-        const id = req.params.id;
-        if (!id) return res.status(400).send('Missing required fields');
+        const id: string = req.params.id;
+        const fields = req.body.fields;
+
+        if (!idValidation(id))
+            return res.status(400).send('Missing required fields');
 
         const user = await users.findById(id);
         if (!user) return res.status(404).send("User not found");
 
-        await users.findByIdAndDelete(id);
+        await users.findByIdAndDelete(id)
+            .select(createSelectString(fields, availableFields, defaultSelectString));
         return res.status(200).json(user);
     } catch (error) {
         console.error(`Error (Controllers/user/drop): ${error}`);

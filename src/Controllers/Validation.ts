@@ -1,10 +1,5 @@
 import { Condition, State } from './../Interfaces/ConversationFlow';
 
-export function phoneValidation(phone: string) {
-    const regex = /^\d{10}$/;
-    return regex.test(phone);
-}
-
 export function conditionAsignation(currentConditions: Condition[], newConditions: Condition[]): Condition[] {
     const currentConditionNames = new Set(currentConditions.map(cond => cond.name));
 

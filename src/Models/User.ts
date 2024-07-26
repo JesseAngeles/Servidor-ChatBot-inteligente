@@ -5,11 +5,16 @@ const { Schema } = mongoose;
 
 const user = new Schema<User>({
   name: {
-    type: String,
+    type: Schema.Types.String,
     required: true
   }, 
   phone: {
-    type: String,
+    type: Schema.Types.String,
+    unique: true,
+    required: true
+  },
+  email: {
+    type: Schema.Types.String,
     unique: true,
     required: true
   }

@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import accounts from "../Models/Account";
-import { createSelectString, phoneValidation } from "./Validation";
+import { createSelectString } from "./Validation";
+import { phoneValidation } from "../Middlewares/FieldValidation";
 
 const availableFields = { _id: true, name: true, context: true, campaign: true, phone: true};
 const defaultSelectString = "_id name campaign phone";
 
-//* Crear una nueva cuenta
+// Crear una nueva cuenta
 export const add = async (req: Request, res: Response) => {
     try {
         const { name, context, campaign, phone } = req.body;
