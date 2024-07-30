@@ -14,7 +14,7 @@ export interface Transition {
     _id: any;
     exit: State;
     arrival: State;
-    conditions: [Condition, number][] | null;
+    conditions: [Condition, number][][] | null;
 }
 
 export interface ConversationFlow {

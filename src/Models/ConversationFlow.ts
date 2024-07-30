@@ -34,7 +34,7 @@ const transitionSchema = new Schema<Transition>({
         type: stateSchema,
         required: true
     },
-    conditions: [{
+    conditions: [[{
         type: [
             {
                 type: conditionSchema,
@@ -46,7 +46,7 @@ const transitionSchema = new Schema<Transition>({
             }
         ],
         required: false
-    }]
+    }]]
 });
 
 export const conversationFlowSchema = new Schema<ConversationFlow>({

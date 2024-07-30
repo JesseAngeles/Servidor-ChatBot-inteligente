@@ -10,10 +10,7 @@ const defaultSelectString = '_id name phone email';
 // Crear nuevo usuario 
 export const add = async (req: Request, res: Response) => {
     try {
-        const name: string = req.body.name;
-        const phone: string = req.body.phone;
-        const email: string = req.body.email;
-        const fields = req.body.fields;
+        const { name, phone, email, fields } = req.body
 
         if (!nameValidation(name) || !phoneValidation(phone) || emailValidation(email))
             return res.status(400).send('Missing required fields');
@@ -71,10 +68,7 @@ export const getUser = async (req: Request, res: Response) => {
 export const update = async (req: Request, res: Response) => {
     try {
         const id: string = req.params.id;
-        const name: string = req.body.name;
-        const phone: string = req.body.phone;
-        const email: string = req.body.email;
-        const fields = req.body.fields;
+        const { name, phone, email, fields } = req.body;
 
         if (!idValidation(id))
             return res.status(400).send('Missing required fields');

@@ -8,8 +8,7 @@ import mongoose from 'mongoose';
 export const addConstraints = async (req: Request, res: Response) => {
     try {
         const idAccount: String = req.params.idAccount;
-        const conditions: Condition[] = req.body.conditions;
-        const states: State[] = req.body.states;
+        const { conditions, states }: { conditions: Condition[], states: State[] } = req.body;
 
         const account = await accounts.findById(idAccount);
         if (!account) //* la cuenta existe en la base de datos
@@ -33,13 +32,12 @@ export const addConstraints = async (req: Request, res: Response) => {
 export const setTransition = async (req: Request, res: Response) => {
     try {
         const idAccount: String = req.params.idAccount;
-        const idExit: String = req.body.idExit;
-        const idArrival: String = req.body.idArrival;
-        const conditions: [String, number][] = req.body.conditions;
+        const conditions: [Condition, number][][] = req.body.conditions;
+        const { idExit, idArrival } = req.body;
 
         let flagState: number = 0;
 
-        const validConditions: [Condition, number][] = [];
+        const validConditions: [Condition, number][][] = [[]];
 
         const account = await accounts.findById(idAccount);
         if (!account) //* la cuenta existe en la base de datos
@@ -62,13 +60,19 @@ export const setTransition = async (req: Request, res: Response) => {
         if (!exitState || !arrivalState) return res.status(400).send(`can't find exit or arrival state`);
 
         // * Validación de condiciones y valores
-        conditions.forEach(condition => {
-            const [conditionId, position] = condition;
-            const currentCondition = account.conversationFlow.conditions.find(cond => cond._id.toString() === conditionId);
+        conditions.forEach(orConditions => {
+            const validOrConditions: [Condition, number][] = [];
+            orConditions.forEach(condition => {
+                const [conditionId, position] = condition;
+                const currentCondition = account.conversationFlow.conditions.find(cond => cond._id.toString() === conditionId);
 
-            if (currentCondition && position < currentCondition.values.length)
-                validConditions.push([currentCondition, position]);
+                if (currentCondition && position < currentCondition.values.length)
+                    validOrConditions.push([currentCondition, position]);
+            })
+            if (validConditions.length > 0)
+                validConditions.push(validOrConditions);
         });
+        (validConditions.reverse().pop())?.reverse();
 
         const transition: Transition = {
             _id: new mongoose.Types.ObjectId(),
@@ -79,12 +83,11 @@ export const setTransition = async (req: Request, res: Response) => {
         // * Verificar si la transición ya existe
         const isDuplicate = account.conversationFlow.transitions.some(currentTransition => {
             return currentTransition.exit._id.toString() === transition.exit._id.toString() &&
-                currentTransition.arrival._id.toString() === transition.arrival._id.toString() &&
-                arraysEqual(currentTransition.conditions || [], transition.conditions || []);
+                currentTransition.arrival._id.toString() === transition.arrival._id.toString()
         });
         if (isDuplicate) //* Evita transiciones deuplicadas
             return res.status(400).send('Transition already exists');
-            
+
         account.conversationFlow.transitions.push(transition);
         await account.save();
         return res.status(200).json(account.conversationFlow);
@@ -221,12 +224,12 @@ export const deleteCondition = async (req: Request, res: Response) => {
 
         for (const transition of account.conversationFlow.transitions) {
             if (!transition.conditions) continue;
-            for (const condition of transition.conditions)
-                if (condition[0]._id.toString() == idCondition) {
-                    conditionInUse = true;
-                    break;
-
-                }
+            for (const orCondition of transition.conditions)
+                for (const condition of orCondition)
+                    if (condition[0]._id.toString() == idCondition) {
+                        conditionInUse = true;
+                        break;
+                    }
         }
 
         if (conditionInUse) return res.status(400).send(`Can´t delete, condition in use`);
