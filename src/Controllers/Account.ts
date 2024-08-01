@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import accounts from "../Models/Account";
-import { createSelectString } from "./Validation";
 import { idValidation, nameValidation, phoneValidation } from "../Middlewares/FieldValidation";
+import { createSelectString } from "../Middlewares/Functions";
 
 const availableFields = { _id: true, name: true, context: true, campaign: true, phone: true };
 const defaultSelectString = "_id name campaign phone";

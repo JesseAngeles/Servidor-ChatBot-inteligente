@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 import connectDB from './DatabaseConnection';
 
-import { processCSV } from './Controllers/Bayes';
+import { processCSV } from './Middlewares/Bayes';
 
 //TODO importar rutas
 import routerUser from './Routes/User';

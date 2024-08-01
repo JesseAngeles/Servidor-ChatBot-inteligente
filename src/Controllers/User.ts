@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import users from "../Models/User";
-import { testMessage } from "./Bayes";
+import { testMessage } from "../Middlewares/Bayes";
 import { idValidation, nameValidation, phoneValidation, emailValidation } from "../Middlewares/FieldValidation";
 import { createSelectString } from "../Middlewares/Functions";
 
