@@ -180,7 +180,7 @@ export const deleteCondition = async (req: Request, res: Response) => {
     }
 }
 
-//todo Eliminar estados
+// Eliminar estados
 export const deleteState = async (req: Request, res: Response) => {
     try {
         const { idAccount, idState } = req.params;
