@@ -19,14 +19,14 @@ export function createSelectString(required: Record<string, any> | undefined,
 }
 
 export function conditionAsignation(currentConditions: Condition[], newConditions: Condition[]): Condition[] {
-    const currentConditionNames = new Set(currentConditions.map(cond => cond.name));
+    const currentConditionNames = new Set(currentConditions.map(condition => condition.name));
 
-    newConditions.forEach(newCondition => {
-        let currentCondition = currentConditions.find(cond => cond.name === newCondition.name);
+    for (const newCondition of newConditions) {
+        const newConditionValues = new Set(newCondition.values.map(value => value));
+        let currentCondition = currentConditions.find(condition => condition.name === newCondition.name);
 
         if (currentCondition) {//* Si la condición ya existe, agregar nuevos valores evitando duplicados
             const currentValuesSet = new Set(currentCondition.values);
-
             newCondition.values.forEach(newValue => {
                 if (!currentValuesSet.has(newValue)) {
                     currentCondition!.values.push(newValue);
@@ -34,8 +34,9 @@ export function conditionAsignation(currentConditions: Condition[], newCondition
                 }
             });
         } else //* Si la condición no existe, agregarla a las condiciones actuales
-            currentConditions.push(newCondition);
-    });
+            if (newConditionValues.size <= 1) continue;
+            else currentConditions.push(newCondition);
+    };
 
     return currentConditions;
 }
@@ -51,7 +52,6 @@ export function stateAsignation(currentStates: State[], newStates: State[]): Sta
             return newState.name === stateObj.name;
         });
 
-        
         if (!isNewStatePresent) { //* Si el estado no está presente, agregarlo a currentStates y currentStateSet
             currentStates.push(newState);
             currentStateSet.add(JSON.stringify({

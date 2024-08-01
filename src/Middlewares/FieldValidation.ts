@@ -18,44 +18,52 @@ export function emailValidation(email: string): boolean {
     return regex.test(email);
 }
 
-export function statesValidation(states: State[], idExit: string, idArrival: string): [State, State] {
+// Valida que los estados existan y sean diferentes
+export function statesValidation(states: State[], idExit: string, idArrival: string): [any, any] {
     let flagCounter: number = 0;
-    let exitState: State = Object(null);
-    let arrivalState: State = Object(null);
 
     states.forEach(state => {
-        if (idExit = state._id.toString()) flagCounter++;
-        else if (idArrival = state._id.toString()) flagCounter++;
+        if (idExit == state._id.toString()) flagCounter++;
+        else if (idArrival == state._id.toString()) flagCounter++;
     });
-    if (flagCounter == 2) {
-        exitState = states.find(state => state._id.toString() == idExit)!;
-        arrivalState = states.find(state => state._id.toString() == idArrival)!;
-    }
-    return [exitState, arrivalState];
+
+    return (flagCounter == 2) ? [
+        states.find(state => state._id.toString() == idExit)!,
+        states.find(state => state._id.toString() == idArrival)!
+    ] : [null, null];
 }
 
 export function conditionsValidation(conditions: [Condition, number][][], currentConditions: Condition[]): [Condition, number][][] {
     const validConditions: [Condition, number][][] = [];
-    conditions.forEach(orConditions => {
+    for (const orConditions of conditions) {
+        if (!orConditions || !Array.isArray(orConditions)) continue;
         const validOrConditions: [Condition, number][] = [];
-        orConditions.forEach(condition => {
+
+        for (const condition of orConditions) {
+            if (!Array.isArray(condition)) continue;
+
             const [conditionId, position] = condition;
             const currentCondition = currentConditions.find(cond => cond._id.toString() == conditionId);
 
             if (currentCondition && position < currentCondition.values.length && position >= 0)
-                validOrConditions.push([currentCondition, position]);
-        })
+                if (!validOrConditions.find(condition => condition[0]._id.toString() == currentCondition._id.toString()))
+                    validOrConditions.push([currentCondition, position]);
+        }
+
         if (validOrConditions.length > 0)
             validConditions.push(validOrConditions);
-    })
+    }
     return validConditions;
 }
 
 export function transitionValidation(transition: Transition, transitions: Transition[]): boolean {
-    return !transitions.some(currentTransition => {
-        return currentTransition.exit._id === transition._id &&
-            currentTransition.arrival._id === transition._id;
-    })
+    for (const currentTransition of transitions) {
+        if (transition.exit._id.toString() == currentTransition.exit._id.toString() &&
+            transition.arrival._id.toString() == currentTransition.arrival._id.toString()) {
+            return false;
+        }
+    };
+    return true;
 }
 
 export function constraintExists(constraints: any[], idConstraint: string, name: string): number {
@@ -72,12 +80,12 @@ export function constraintExists(constraints: any[], idConstraint: string, name:
             break;
         }
     }
-    return (constraintExists && nameUnique ? indexConstraint : 0);
+    return (constraintExists && nameUnique ? indexConstraint : -1);
 }
 
 export function transitionExists(transitions: Transition[], idTransition: string): number {
     let transitionIndex: number = 0;
-    let transitionExists:boolean = false;
+    let transitionExists: boolean = false;
     for (const transition of transitions) {
         if (transition._id.toString() == idTransition) {
             transitionExists = true;
@@ -86,7 +94,7 @@ export function transitionExists(transitions: Transition[], idTransition: string
         transitionIndex++;
     }
 
-    return (transitionExists ? transitionIndex : 0);
+    return (transitionExists ? transitionIndex : -1);
 }
 
 export function conditionInUse(transitions: Transition[], idCondition: string): boolean {
