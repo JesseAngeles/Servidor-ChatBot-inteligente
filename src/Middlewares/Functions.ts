@@ -1,4 +1,6 @@
-import { Condition, State } from "../Interfaces/ConversationFlow";
+import mongoose, { Mongoose } from "mongoose";
+import { Condition, ConversationFlow, State, Transition } from "../Interfaces/ConversationFlow";
+import { NextState } from "../Interfaces/Account";
 
 // Función para generar cadena de selección en mongoose
 export function createSelectString(required: Record<string, any> | undefined,
@@ -18,6 +20,7 @@ export function createSelectString(required: Record<string, any> | undefined,
     return select.trim();
 }
 
+// Función para asignar las condiciones en el conversationFlow
 export function conditionAsignation(currentConditions: Condition[], newConditions: Condition[]): Condition[] {
     const currentConditionNames = new Set(currentConditions.map(condition => condition.name));
 
@@ -41,6 +44,7 @@ export function conditionAsignation(currentConditions: Condition[], newCondition
     return currentConditions;
 }
 
+// Función para asignar los estados en el conversationFlow
 export function stateAsignation(currentStates: State[], newStates: State[]): State[] {
     const currentStateSet = new Set(currentStates.map(state => JSON.stringify({
         name: state.name
@@ -61,4 +65,37 @@ export function stateAsignation(currentStates: State[], newStates: State[]): Sta
     });
 
     return currentStates;
+}
+
+// Función para inicilizar el flujo conversacional y el estado inicial
+export function initConversationFlow(): [ConversationFlow, State] {
+    const conversationFlow: ConversationFlow = Object(null);
+    const state: State = {
+        _id: new mongoose.Types.ObjectId(),
+        name: "init",
+        description: "First state"
+    }
+
+    conversationFlow.states = [state];
+    return [conversationFlow, state];
+}
+
+// Actualizar nextStates
+export function updateNextStates(currentState: State, transitions: Transition[]):NextState[] {
+    let nextStates: NextState[] = [];
+
+    let andConditons: Condition[] = [];
+
+    transitions.forEach(transition => {
+        if (transition.exit._id.toString() == currentState._id.toString()) {
+            transition.conditions?.forEach(orConditions => {
+                orConditions.forEach(condition => {
+                    console.log(condition[0]._id);
+
+                })
+            })
+        } 
+    })
+
+    return nextStates;
 }

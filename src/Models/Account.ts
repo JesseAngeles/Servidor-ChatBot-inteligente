@@ -1,31 +1,32 @@
-import { Account } from "../Interfaces/Account";
 import mongoose from "mongoose";
+import { Account } from "../Interfaces/Account";
 import { conversationFlowSchema } from "./ConversationFlow";
+import { stateSchema } from "./State";
+import { nextStateSchema } from "./NextState";
 
-const { Schema } = mongoose;
+const { Schema} = mongoose;
 
-const accountSchema = new Schema<Account>({
+export const accountSchema = new Schema<Account>({
     name: {
         type: Schema.Types.String,
         required: true
     },
     context: {
         type: Schema.Types.String,
-        required: true
-    },
-    campaign: {
-        type: Schema.Types.String,
-        required: true
-    },
-    phone: {
-        type: Schema.Types.String,
-        unique: true,
-        required: true
+        required: true   
     },
     conversationFlow: {
         type: conversationFlowSchema,
-        required: false
-    }
-});
+        required: true,
+    },
+    currentState: {
+        type: stateSchema,
+        required: true
+    },
+    nextStates: [{
+        type: nextStateSchema,
+        required: true
+    }]
+})
 
 export default mongoose.model<Account>('accounts', accountSchema);

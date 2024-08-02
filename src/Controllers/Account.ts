@@ -1,28 +1,31 @@
 import { Request, Response } from "express";
 import accounts from "../Models/Account";
 import { idValidation, nameValidation, phoneValidation } from "../Middlewares/FieldValidation";
-import { createSelectString } from "../Middlewares/Functions";
+import { createSelectString, initConversationFlow, updateNextStates } from "../Middlewares/Functions";
+import { NextState } from "../Interfaces/Account";
 
-const availableFields = { _id: true, name: true, context: true, campaign: true, phone: true };
-const defaultSelectString = "_id name campaign phone";
+const availableFields = { _id: true, name: true, context: true, campaign: true, phone: true, currentState: true};
+const defaultSelectString = "_id name campaign phone currentState nextStates";
 
 // Crear una nueva cuenta
 export const add = async (req: Request, res: Response) => {
     try {
         const { name, context, campaign, phone, fields } = req.body;
-        const conversationFlow = Object(null);
+        const [conversationFlow, currentState] = initConversationFlow();
+        const nextStates:NextState[] = [];
 
         if (!nameValidation(name) || !phoneValidation(phone))
             return res.status(400).send('Missing required fields');
 
-        const newAccount = new accounts({ name, context, campaign, phone, conversationFlow });
+        const newAccount = new accounts({ name, context, campaign, phone, conversationFlow, currentState, nextStates });
         const addAccount = await newAccount.save();
         const returnAccount = await accounts.findById(addAccount._id)
             .select(createSelectString(fields, availableFields, defaultSelectString));
 
         return res.status(200).json(returnAccount);
     } catch (error) {
-        console.error(`Error (Controllers/account/add): ${error}`);
+        console.error(`Error (Controllers/account/add)`);
+        console.log(error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
@@ -31,7 +34,6 @@ export const add = async (req: Request, res: Response) => {
 export const getAll = async (req: Request, res: Response) => {
     try {
         const fields = req.body.fields;
-        const select = createSelectString(fields, availableFields, defaultSelectString);
 
         const allAccounts = await accounts.find()
             .select(createSelectString(fields, availableFields, defaultSelectString));
@@ -112,5 +114,27 @@ export const drop = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(`Error (Controllers/account/drop): ${error}`);
         return res.status(500).send(`Server error: ${error}`);
+    }
+}
+
+//todo prueba update nextStates
+export const testUpdate = async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id;
+
+        if (!idValidation(id)) 
+            return res.status(400).send(`Missing required fields`);
+
+        const account = await accounts.findById(id);
+        if (!account)
+            return res.status(404).send(`Can´t find account by ID`);
+
+        account.nextStates = updateNextStates(account.currentState, account.conversationFlow.transitions);
+        //todo falta actualizar la base de datos
+        return res.status(200).json(account.nextStates);
+    } catch (error) {
+        console.log(`Error (Controllers/account/testUpdate)`);
+        console.log(error);
+        return res.status(500).send(`Server errro: ${error}`);
     }
 }

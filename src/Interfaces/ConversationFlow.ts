@@ -1,21 +1,6 @@
-export interface Condition {
-    _id: any;
-    name: string;
-    values: any[];
-}
-
-export interface State {
-    _id: any;
-    name: string;
-    description: string;
-}
-
-export interface Transition {
-    _id: any;
-    exit: State;
-    arrival: State;
-    conditions: [Condition, number][][] | null;
-}
+import { Condition } from "./Condition";
+import { State } from "./State";
+import { Transition } from "./Transition";
 
 export interface ConversationFlow {
     conditions: Condition[];

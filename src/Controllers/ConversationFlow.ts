@@ -181,6 +181,7 @@ export const deleteCondition = async (req: Request, res: Response) => {
 }
 
 // Eliminar estados
+//TODO Validar estados que no se encuentren en uso por account 
 export const deleteState = async (req: Request, res: Response) => {
     try {
         const { idAccount, idState } = req.params;
