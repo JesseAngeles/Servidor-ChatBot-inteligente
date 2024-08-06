@@ -15,7 +15,7 @@ export const transitionSchema = new Schema<Transition>({
         required: true
     },
     conditions: [[{
-        type: conditionValueSchema | null,
+        type: conditionValueSchema || null,
         required: true
     }]]
 })

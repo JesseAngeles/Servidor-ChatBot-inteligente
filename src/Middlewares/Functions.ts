@@ -1,23 +1,22 @@
-import mongoose, { Mongoose } from "mongoose";
-import { Condition, ConversationFlow, State, Transition } from "../Interfaces/ConversationFlow";
-import { NextState } from "../Interfaces/Account";
+import mongoose from "mongoose";
+import { Condition } from "../Interfaces/Condition";
+import { ConversationFlow } from "../Interfaces/ConversationFlow";
+import { State } from "../Interfaces/State";
+import { Transition } from "../Interfaces/Transition";
+import { NextState } from "../Interfaces/NextState";
 
 // Función para generar cadena de selección en mongoose
-export function createSelectString(required: Record<string, any> | undefined,
-    availableFields: { [key: string]: boolean },
-    defaultSelectString: string): string {
-    let select = "";
-    if (required) {
-        for (const field in required) {
-            if (required[field] && availableFields.hasOwnProperty(field)) {
-                select += field + " ";
-            }
-        }
-    }
+export function createSelect(required: { [key: string]: boolean },
+    availableFields: { [key: string]: boolean }): { [key: string]: boolean } {
 
-    if (!select) return defaultSelectString;
+        if(!required) return availableFields;
+        const selectedFields: { [key: string]: boolean } = {};
 
-    return select.trim();
+    for (const field of Object.keys(required)) 
+        if (availableFields[field] && required[field]) 
+            selectedFields[field] = true;
+        
+    return (selectedFields ? selectedFields : availableFields);
 }
 
 // Función para asignar las condiciones en el conversationFlow
@@ -87,11 +86,10 @@ export function updateNextStates(currentState: State, transitions: Transition[])
     let andConditons: Condition[] = [];
 
     transitions.forEach(transition => {
-        if (transition.exit._id.toString() == currentState._id.toString()) {
+        if (transition.exitState._id.toString() == currentState._id.toString()) {
             transition.conditions?.forEach(orConditions => {
                 orConditions.forEach(condition => {
-                    console.log(condition[0]._id);
-
+                    // console.log(condition[0]._id);
                 })
             })
         } 
@@ -99,3 +97,4 @@ export function updateNextStates(currentState: State, transitions: Transition[])
 
     return nextStates;
 }
+

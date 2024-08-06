@@ -1,4 +1,7 @@
-import { State, Condition, Transition } from "../Interfaces/ConversationFlow";
+import { Condition } from "../Interfaces/Condition";
+import { ConditionValue } from "../Interfaces/ConditionValue";
+import { State } from "../Interfaces/State";
+import { Transition } from "../Interfaces/Transition";
 
 export function idValidation(id: string): boolean {
     return (id ? true : false);
@@ -6,6 +9,14 @@ export function idValidation(id: string): boolean {
 
 export function nameValidation(name: string): boolean {
     return (name ? true : false);
+}
+
+export function contextValidation(context: string): boolean {
+    return (context ? true : false);
+}
+
+export function descriptionValidation(description: string): boolean {
+    return (description ? true : false);
 }
 
 export function phoneValidation(phone: string): boolean {
@@ -33,22 +44,31 @@ export function statesValidation(states: State[], idExit: string, idArrival: str
     ] : [null, null];
 }
 
-export function conditionsValidation(conditions: [Condition, number][][], currentConditions: Condition[]): [Condition, number][][] {
-    const validConditions: [Condition, number][][] = [];
+export function conditionsValidation(conditions: ConditionValue[][], 
+currentConditions: Condition[]): ConditionValue[][] {
+    
+    const validConditions: ConditionValue[][] = [];
     for (const orConditions of conditions) {
         if (!orConditions || !Array.isArray(orConditions)) continue;
-        const validOrConditions: [Condition, number][] = [];
+        const validOrConditions: ConditionValue[] = [];
 
-        for (const condition of orConditions) {
-            if (!Array.isArray(condition)) continue;
+        for (const conditionObject of orConditions) {
 
-            const [conditionId, position] = condition;
-            const currentCondition = currentConditions.find(cond => cond._id.toString() == conditionId);
+            const {condition, indexExpected} = conditionObject;
+            console.log(condition);
+            
+            const currentCondition = currentConditions.find(cond => cond._id.toString() == condition);
 
-            if (currentCondition && position < currentCondition.values.length && position >= 0)
-                if (!validOrConditions.find(condition => condition[0]._id.toString() == currentCondition._id.toString()))
-                    validOrConditions.push([currentCondition, position]);
-        }
+            if (currentCondition && indexExpected < currentCondition.values.length && indexExpected >= 0)
+                if (!validOrConditions.find(condition => condition.condition._id.toString() == currentCondition._id.toString()))
+                    {
+                        const conditionPush: ConditionValue = {
+                            condition: currentCondition,
+                            indexExpected: indexExpected,
+                            indexValue: -1
+                        }
+                    validOrConditions.push(conditionPush);
+        }}
 
         if (validOrConditions.length > 0)
             validConditions.push(validOrConditions);
@@ -58,8 +78,8 @@ export function conditionsValidation(conditions: [Condition, number][][], curren
 
 export function transitionValidation(transition: Transition, transitions: Transition[]): boolean {
     for (const currentTransition of transitions) {
-        if (transition.exit._id.toString() == currentTransition.exit._id.toString() &&
-            transition.arrival._id.toString() == currentTransition.arrival._id.toString()) {
+        if (transition.exitState._id.toString() == currentTransition.exitState._id.toString() &&
+            transition.arrivalState._id.toString() == currentTransition.arrivalState._id.toString()) {
             return false;
         }
     };
@@ -102,7 +122,7 @@ export function conditionInUse(transitions: Transition[], idCondition: string): 
         if (!transition.conditions) continue;
         for (const orCondition of transition.conditions)
             for (const condition of orCondition)
-                if (condition[0]._id.toString() == idCondition)
+                if (condition.condition._id.toString() == idCondition)
                     return true;
     }
     return false;
@@ -110,9 +130,17 @@ export function conditionInUse(transitions: Transition[], idCondition: string): 
 
 export function stateInUse(transitions: Transition[], idState: string): boolean {
     for (const transition of transitions)
-        if (transition.exit._id.toString() == idState ||
-            transition.arrival._id.toString() == idState) {
+        if (transition.exitState._id.toString() == idState ||
+            transition.arrivalState._id.toString() == idState) {
             return true;
         }
     return false;
+}
+
+export function updateStateValidation(state: State, name: string, description: string): State {
+    if (nameValidation(name))
+        state.name = name;
+    if(descriptionValidation(description))
+        state.description = description;
+    return state;
 }

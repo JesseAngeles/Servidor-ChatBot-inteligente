@@ -1,9 +1,14 @@
-import { Condition, State, Transition } from './../Interfaces/ConversationFlow';
-import { Request, Response } from 'express';
+import { update } from './User';
+import { Request, Response } from "express";
 import accounts from "../Models/Account";
 import mongoose from 'mongoose';
-import { conditionInUse, conditionsValidation, constraintExists, idValidation, nameValidation, stateInUse, statesValidation, transitionExists, transitionValidation } from '../Middlewares/FieldValidation';
-import { conditionAsignation, stateAsignation } from '../Middlewares/Functions';
+import { Condition } from "../Interfaces/Condition";
+import { State } from "../Interfaces/State";
+import { conditionAsignation, stateAsignation } from "../Middlewares/Functions";
+import { conditionInUse, conditionsValidation, constraintExists, descriptionValidation, idValidation, nameValidation, stateInUse, statesValidation, transitionExists, transitionValidation, updateStateValidation } from "../Middlewares/FieldValidation";
+import { Transition } from "../Interfaces/Transition";
+import { ConditionValue } from "../Interfaces/ConditionValue";
+
 
 // Añadir condiciones y estados
 export const addConstraints = async (req: Request, res: Response) => {
@@ -36,7 +41,7 @@ export const setTransition = async (req: Request, res: Response) => {
         const idAccount: String = req.params.idAccount;
         const { idExit, idArrival, conditions }: {
             idExit: string, idArrival: string,
-            conditions: [Condition, number][][]
+            conditions: ConditionValue[][]
         } = req.body;
 
         const account = await accounts.findById(idAccount);
@@ -53,9 +58,9 @@ export const setTransition = async (req: Request, res: Response) => {
 
         const transition: Transition = {
             _id: new mongoose.Types.ObjectId(),
-            exit: exitState,
-            arrival: arrivalState,
-            conditions: (validConditions.length > 0 ? validConditions : null),
+            exitState: exitState,
+            arrivalState: arrivalState,
+            conditions: validConditions.length > 0 ? validConditions : null
         };
 
         // * Verificar si la transición ya existe
@@ -101,11 +106,16 @@ export const updateCondition = async (req: Request, res: Response) => {
         if (!account)
             return res.status(404).send('Can´t find account by ID')
 
-        //* Validación si existe la condicion
-        const indexCondition = constraintExists(account.conversationFlow.conditions, idCondition, name);
-        if (indexCondition < 0)
-            return res.status(400).send('Can´t update condition');
+        //* Encontrar la condicion a actualizar
+        const indexCondition = account.conversationFlow.conditions.findIndex(condition => condition._id.toString() === idCondition);
+        if (indexCondition === -1)
+             return res.status(404).send('State not found');
+ 
+        //* Validación si la condicion no esta en uso
+        if (conditionInUse(account.conversationFlow.transitions, idCondition))
+            return res.status(400).send(`Can´t delete, condition in use`);
 
+        //* Actualizar la información
         if (nameValidation(name))
             account.conversationFlow.conditions[indexCondition].name = name;
         if (values && Array.isArray(values) && values.length > 1)
@@ -132,15 +142,22 @@ export const updateState = async (req: Request, res: Response) => {
         if (!account)
             return res.status(404).send('Can´t find account by ID')
 
-        //* Validación si existe el estado
-        const indexState = constraintExists(account.conversationFlow.states, idState, name)
-        if (indexState < 0)
-            return res.status(400).send('Can´t update state');
+        //* Encontrar el estado a actualizar
+        const indexState = account.conversationFlow.states.findIndex(state => state._id.toString() === idState);
+        if (indexState === -1)
+             return res.status(404).send('State not found');
+ 
+        //* Actualizar los estados en cascada
+        updateStateValidation(account.conversationFlow.states[indexState], name, description);
+        if (account.currentState._id.toString() == idState) 
+            updateStateValidation(account.currentState, name, description);
 
-        if (nameValidation(name))
-            account.conversationFlow.states[indexState].name = name;
-        if (description)
-            account.conversationFlow.states[indexState].description = description;
+        account.conversationFlow.transitions.forEach(transition=> {
+            if(transition.exitState._id.toString() == idState) 
+                updateStateValidation(transition.exitState, name, description);
+            if(transition.arrivalState._id.toString() == idState) 
+                updateStateValidation(transition.arrivalState, name, description);
+        })
 
         const updatedState = await account.save();
         return res.status(200).json(updatedState.conversationFlow);
@@ -181,7 +198,6 @@ export const deleteCondition = async (req: Request, res: Response) => {
 }
 
 // Eliminar estados
-//TODO Validar estados que no se encuentren en uso por account 
 export const deleteState = async (req: Request, res: Response) => {
     try {
         const { idAccount, idState } = req.params;
@@ -199,7 +215,8 @@ export const deleteState = async (req: Request, res: Response) => {
             return res.status(404).send(`Can´t find state by ID`);
 
         //* Validación que no este en uso el estado
-        if (stateInUse(account.conversationFlow.transitions, idState))
+        if (stateInUse(account.conversationFlow.transitions, idState) ||
+        account.currentState._id.toString() == idState)
             return res.status(400).send(`Can´t delete, state in use`);
 
         account.conversationFlow.states.splice(stateIndex, 1);

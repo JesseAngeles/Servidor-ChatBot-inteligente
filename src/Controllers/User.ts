@@ -2,10 +2,9 @@ import { Request, Response } from "express";
 import users from "../Models/User";
 import { testMessage } from "../Middlewares/Bayes";
 import { idValidation, nameValidation, phoneValidation, emailValidation } from "../Middlewares/FieldValidation";
-import { createSelectString } from "../Middlewares/Functions";
+import { createSelect } from "../Middlewares/Functions";
 
 const availableFields = { _id: true, name: true, phone: true, email: true };
-const defaultSelectString = '_id name phone email';
 
 // Crear nuevo usuario 
 export const add = async (req: Request, res: Response) => {
@@ -18,7 +17,7 @@ export const add = async (req: Request, res: Response) => {
         const newUser = new users({ name, phone, email });
         const addUser = await newUser.save();
         const returnUser = await users.findById(addUser._id)
-            .select(createSelectString(fields, availableFields, defaultSelectString));
+            .select(createSelect(fields, availableFields));
 
         return res.status(200).json(returnUser);
     } catch (error) {
@@ -33,7 +32,7 @@ export const getAll = async (req: Request, res: Response) => {
         const fields = req.body.fields;
 
         const allUsers = await users.find()
-            .select(createSelectString(fields, availableFields, defaultSelectString));
+            .select(createSelect(fields, availableFields));
 
         return res.status(200).json(allUsers);
     } catch (error) {
@@ -52,7 +51,7 @@ export const getUser = async (req: Request, res: Response) => {
             return res.status(400).send('Missing required fields');
 
         const user = await users.findById(id)
-            .select(createSelectString(fields, availableFields, defaultSelectString));
+            .select(createSelect(fields, availableFields));
 
         if (!user)
             return res.status(404).send('User not found');
@@ -73,7 +72,7 @@ export const update = async (req: Request, res: Response) => {
         if (!idValidation(id))
             return res.status(400).send('Missing required fields');
 
-        const user = await users.findById(id).select(defaultSelectString);
+        const user = await users.findById(id).select(availableFields);
         if (!user)
             return res.status(404).send("User not found");
 
@@ -83,7 +82,7 @@ export const update = async (req: Request, res: Response) => {
 
         const updateUser = await user.save();
         const returnUser = await users.findById(updateUser._id)
-            .select(createSelectString(fields, availableFields, defaultSelectString));
+            .select(createSelect(fields, availableFields));
 
         return res.status(200).json(returnUser);
     } catch (error) {
@@ -105,7 +104,7 @@ export const drop = async (req: Request, res: Response) => {
         if (!user) return res.status(404).send("User not found");
 
         await users.findByIdAndDelete(id)
-            .select(createSelectString(fields, availableFields, defaultSelectString));
+            .select(createSelect(fields, availableFields));
         return res.status(200).json(user);
     } catch (error) {
         console.error(`Error (Controllers/user/drop): ${error}`);
