@@ -109,8 +109,8 @@ export const updateCondition = async (req: Request, res: Response) => {
         //* Encontrar la condicion a actualizar
         const indexCondition = account.conversationFlow.conditions.findIndex(condition => condition._id.toString() === idCondition);
         if (indexCondition === -1)
-             return res.status(404).send('State not found');
- 
+            return res.status(404).send('State not found');
+
         //* Validación si la condicion no esta en uso
         if (conditionInUse(account.conversationFlow.transitions, idCondition))
             return res.status(400).send(`Can´t delete, condition in use`);
@@ -145,17 +145,17 @@ export const updateState = async (req: Request, res: Response) => {
         //* Encontrar el estado a actualizar
         const indexState = account.conversationFlow.states.findIndex(state => state._id.toString() === idState);
         if (indexState === -1)
-             return res.status(404).send('State not found');
- 
+            return res.status(404).send('State not found');
+
         //* Actualizar los estados en cascada
         updateStateValidation(account.conversationFlow.states[indexState], name, description);
-        if (account.currentState._id.toString() == idState) 
+        if (account.currentState._id.toString() == idState)
             updateStateValidation(account.currentState, name, description);
 
-        account.conversationFlow.transitions.forEach(transition=> {
-            if(transition.exitState._id.toString() == idState) 
+        account.conversationFlow.transitions.forEach(transition => {
+            if (transition.exitState._id.toString() == idState)
                 updateStateValidation(transition.exitState, name, description);
-            if(transition.arrivalState._id.toString() == idState) 
+            if (transition.arrivalState._id.toString() == idState)
                 updateStateValidation(transition.arrivalState, name, description);
         })
 
@@ -216,7 +216,7 @@ export const deleteState = async (req: Request, res: Response) => {
 
         //* Validación que no este en uso el estado
         if (stateInUse(account.conversationFlow.transitions, idState) ||
-        account.currentState._id.toString() == idState)
+            account.currentState._id.toString() == idState)
             return res.status(400).send(`Can´t delete, state in use`);
 
         account.conversationFlow.states.splice(stateIndex, 1);

@@ -4,7 +4,7 @@ import { conditionSchema } from "./Condition";
 import { stateSchema } from "./State";
 import { transitionSchema } from "./Transition";
 
-const { Schema} = mongoose;
+const { Schema } = mongoose;
 
 export const conversationFlowSchema = new Schema<ConversationFlow>({
     conditions: [{

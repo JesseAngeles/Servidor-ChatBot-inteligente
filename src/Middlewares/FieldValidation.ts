@@ -44,9 +44,9 @@ export function statesValidation(states: State[], idExit: string, idArrival: str
     ] : [null, null];
 }
 
-export function conditionsValidation(conditions: ConditionValue[][], 
-currentConditions: Condition[]): ConditionValue[][] {
-    
+export function conditionsValidation(conditions: ConditionValue[][],
+    currentConditions: Condition[]): ConditionValue[][] {
+
     const validConditions: ConditionValue[][] = [];
     for (const orConditions of conditions) {
         if (!orConditions || !Array.isArray(orConditions)) continue;
@@ -54,21 +54,20 @@ currentConditions: Condition[]): ConditionValue[][] {
 
         for (const conditionObject of orConditions) {
 
-            const {condition, indexExpected} = conditionObject;
-            console.log(condition);
-            
+            const { condition, indexExpected } = conditionObject;
+
             const currentCondition = currentConditions.find(cond => cond._id.toString() == condition);
 
             if (currentCondition && indexExpected < currentCondition.values.length && indexExpected >= 0)
-                if (!validOrConditions.find(condition => condition.condition._id.toString() == currentCondition._id.toString()))
-                    {
-                        const conditionPush: ConditionValue = {
-                            condition: currentCondition,
-                            indexExpected: indexExpected,
-                            indexValue: -1
-                        }
+                if (!validOrConditions.find(condition => condition.condition._id.toString() == currentCondition._id.toString())) {
+                    const conditionPush: ConditionValue = {
+                        condition: currentCondition,
+                        indexExpected: indexExpected,
+                        indexValue: -1
+                    }
                     validOrConditions.push(conditionPush);
-        }}
+                }
+        }
 
         if (validOrConditions.length > 0)
             validConditions.push(validOrConditions);
@@ -140,7 +139,7 @@ export function stateInUse(transitions: Transition[], idState: string): boolean 
 export function updateStateValidation(state: State, name: string, description: string): State {
     if (nameValidation(name))
         state.name = name;
-    if(descriptionValidation(description))
+    if (descriptionValidation(description))
         state.description = description;
     return state;
 }

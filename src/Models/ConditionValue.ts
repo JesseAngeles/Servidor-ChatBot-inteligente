@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { ConditionValue } from "../Interfaces/ConditionValue";
 import { conditionSchema } from "./Condition";
 
-const {Schema} = mongoose;
+const { Schema } = mongoose;
 
 export const conditionValueSchema = new Schema<ConditionValue>({
     condition: {

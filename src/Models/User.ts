@@ -7,7 +7,7 @@ const user = new Schema<User>({
   name: {
     type: Schema.Types.String,
     required: true
-  }, 
+  },
   phone: {
     type: Schema.Types.String,
     unique: true,

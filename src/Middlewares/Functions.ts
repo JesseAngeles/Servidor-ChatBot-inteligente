@@ -9,13 +9,13 @@ import { NextState } from "../Interfaces/NextState";
 export function createSelect(required: { [key: string]: boolean },
     availableFields: { [key: string]: boolean }): { [key: string]: boolean } {
 
-        if(!required) return availableFields;
-        const selectedFields: { [key: string]: boolean } = {};
+    if (!required) return availableFields;
+    const selectedFields: { [key: string]: boolean } = {};
 
-    for (const field of Object.keys(required)) 
-        if (availableFields[field] && required[field]) 
+    for (const field of Object.keys(required))
+        if (availableFields[field] && required[field])
             selectedFields[field] = true;
-        
+
     return (selectedFields ? selectedFields : availableFields);
 }
 
@@ -80,7 +80,7 @@ export function initConversationFlow(): [ConversationFlow, State] {
 }
 
 // Actualizar nextStates
-export function updateNextStates(currentState: State, transitions: Transition[]):NextState[] {
+export function updateNextStates(currentState: State, transitions: Transition[]): NextState[] {
     let nextStates: NextState[] = [];
 
     let andConditons: Condition[] = [];
@@ -92,7 +92,7 @@ export function updateNextStates(currentState: State, transitions: Transition[])
                     // console.log(condition[0]._id);
                 })
             })
-        } 
+        }
     })
 
     return nextStates;

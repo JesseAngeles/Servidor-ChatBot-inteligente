@@ -4,7 +4,7 @@ import { conversationFlowSchema } from "./ConversationFlow";
 import { stateSchema } from "./State";
 import { nextStateSchema } from "./NextState";
 
-const { Schema} = mongoose;
+const { Schema } = mongoose;
 
 export const accountSchema = new Schema<Account>({
     name: {
@@ -13,7 +13,7 @@ export const accountSchema = new Schema<Account>({
     },
     context: {
         type: Schema.Types.String,
-        required: true   
+        required: true
     },
     conversationFlow: {
         type: conversationFlowSchema,

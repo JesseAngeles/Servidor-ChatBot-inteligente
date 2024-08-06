@@ -4,14 +4,14 @@ import { createSelect, initConversationFlow, updateNextStates } from "../Middlew
 import { NextState } from "../Interfaces/NextState";
 import { contextValidation, idValidation, nameValidation } from "../Middlewares/FieldValidation";
 
-const availableFields = {name: true, context: true, currentState: true, nextStates: true};
+const availableFields = { name: true, context: true, currentState: true, nextStates: true };
 
 // Crear una nueva cuenta
 export const add = async (req: Request, res: Response) => {
     try {
         const { name, context, fields } = req.body;
         const [conversationFlow, currentState] = initConversationFlow();
-        const nextStates:NextState[] = [];
+        const nextStates: NextState[] = [];
 
         if (!nameValidation(name) || !contextValidation(context))
             return res.status(400).send('Missing required fields');
@@ -36,8 +36,6 @@ export const getAll = async (req: Request, res: Response) => {
 
         const allAccounts = await accounts.find()
             .select(createSelect(fields, availableFields));
-
-        console.log(createSelect(fields, availableFields));
 
         return res.status(200).json(allAccounts);
     } catch (error) {
@@ -64,7 +62,7 @@ export const getAccount = async (req: Request, res: Response) => {
         return res.status(200).json(account);
     } catch (error) {
         console.error(`Error (Controllers/account/getAccount)`);
-        console.log(error);        
+        console.log(error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
@@ -73,7 +71,7 @@ export const getAccount = async (req: Request, res: Response) => {
 export const update = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
-        const {name, context} = req.body;
+        const { name, context } = req.body;
         const fields = req.body.fields;
 
         if (!idValidation(id))
@@ -125,7 +123,7 @@ export const testUpdate = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
 
-        if (!idValidation(id)) 
+        if (!idValidation(id))
             return res.status(400).send(`Missing required fields`);
 
         const account = await accounts.findById(id);
