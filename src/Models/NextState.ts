@@ -13,5 +13,9 @@ export const nextStateSchema = new Schema<NextState>({
     conditions: [[{
         type: conditionValueSchema,
         required: true
-    }]]
+    },]],
+    available: {
+        type: Schema.Types.Boolean,
+        required: true
+    }
 })

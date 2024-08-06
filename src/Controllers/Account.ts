@@ -117,25 +117,3 @@ export const drop = async (req: Request, res: Response) => {
         return res.status(500).send(`Server error: ${error}`);
     }
 }
-
-//todo prueba update nextStates
-export const testUpdate = async (req: Request, res: Response) => {
-    try {
-        const id = req.params.id;
-
-        if (!idValidation(id))
-            return res.status(400).send(`Missing required fields`);
-
-        const account = await accounts.findById(id);
-        if (!account)
-            return res.status(404).send(`Can´t find account by ID`);
-
-        account.nextStates = updateNextStates(account.currentState, account.conversationFlow.transitions);
-        //todo falta actualizar la base de datos
-        return res.status(200).json(account.nextStates);
-    } catch (error) {
-        console.log(`Error (Controllers/account/testUpdate)`);
-        console.log(error);
-        return res.status(500).send(`Server errro: ${error}`);
-    }
-}

@@ -83,18 +83,23 @@ export function initConversationFlow(): [ConversationFlow, State] {
 export function updateNextStates(currentState: State, transitions: Transition[]): NextState[] {
     let nextStates: NextState[] = [];
 
-    let andConditons: Condition[] = [];
-
     transitions.forEach(transition => {
+        let nextState: NextState = Object(null);
         if (transition.exitState._id.toString() == currentState._id.toString()) {
-            transition.conditions?.forEach(orConditions => {
-                orConditions.forEach(condition => {
-                    // console.log(condition[0]._id);
-                })
-            })
+            nextState = {
+                 state: transition.arrivalState,
+                 conditions: transition.conditions,
+                 available: false                      
+            }
         }
+        if (nextState) 
+            nextStates.push(nextState);
     })
 
     return nextStates;
 }
 
+// Actualizar index
+export function setConditionValue(nextStates: NextState[], idCondition: string, indexValue: number) {
+    
+}
