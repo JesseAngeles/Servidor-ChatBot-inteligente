@@ -10,6 +10,7 @@ import { processCSV } from './Middlewares/Bayes';
 import routerUser from './Routes/User';
 import routerAccount from './Routes/Account';
 import routerConversationFlow from './Routes/ConversationFlow';
+import routerNextStates from './Routes/NextStates';
 
 dotenv.config();
 connectDB();
@@ -40,6 +41,7 @@ app.use(cors());
 app.use('/user', routerUser);
 app.use('/account', routerAccount);
 app.use('/conversationFlow', routerConversationFlow);
+app.use('/nextStates', routerNextStates);
 
 // Iniciar el servidor
 app.listen(port, () => {

@@ -87,12 +87,12 @@ export function updateNextStates(currentState: State, transitions: Transition[])
         let nextState: NextState = Object(null);
         if (transition.exitState._id.toString() == currentState._id.toString()) {
             nextState = {
-                 state: transition.arrivalState,
-                 conditions: transition.conditions,
-                 available: false                      
+                state: transition.arrivalState,
+                conditions: transition.conditions,
+                available: false
             }
         }
-        if (nextState) 
+        if (nextState)
             nextStates.push(nextState);
     })
 
@@ -100,6 +100,32 @@ export function updateNextStates(currentState: State, transitions: Transition[])
 }
 
 // Actualizar index
-export function setConditionValue(nextStates: NextState[], idCondition: string, indexValue: number) {
-    
+export function setConditionValue(nextStates: NextState[], idCondition: string, indexValue: number): NextState[] {
+    nextStates.forEach(nextState => {
+        let orValue = 0;
+        nextState.conditions?.forEach(orCondition => {
+            let andValue = 1;
+            orCondition.forEach(condition => {
+                if (condition.condition._id.toString() == idCondition
+                    && condition.condition.values[indexValue].toString()) {
+                    condition.indexValue = indexValue;
+                    andValue *= +(condition.indexExpected == condition.indexValue);
+                }
+            })
+            orValue += +andValue;
+        })
+        nextState.available = (orValue ? true : false);
+    })
+    return nextStates;
+}
+
+// OBtener estados disponibles
+export function availableStates(nextStates: NextState[]): NextState[] {
+    let availableNextStates: NextState[] = [];
+    nextStates.forEach(nextState => {
+        if (nextState.available)
+            availableNextStates.push(nextState);
+    });
+
+    return availableNextStates;
 }
