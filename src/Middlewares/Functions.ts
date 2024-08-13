@@ -4,6 +4,7 @@ import { ConversationFlow } from "../Interfaces/ConversationFlow";
 import { State } from "../Interfaces/State";
 import { Transition } from "../Interfaces/Transition";
 import { NextState } from "../Interfaces/NextState";
+import { ConditionIndexUpdate } from "../Interfaces/ConditionIdIndex";
 
 // Función para generar cadena de selección en mongoose
 export function createSelect(required: { [key: string]: boolean },
@@ -69,14 +70,20 @@ export function stateAsignation(currentStates: State[], newStates: State[]): Sta
 // Función para inicilizar el flujo conversacional y el estado inicial
 export function initConversationFlow(): [ConversationFlow, State] {
     const conversationFlow: ConversationFlow = Object(null);
-    const state: State = {
+    const firstState: State = {
         _id: new mongoose.Types.ObjectId(),
         name: "init",
         description: "First state"
     }
 
-    conversationFlow.states = [state];
-    return [conversationFlow, state];
+    const lastState: State = {
+        _id: new mongoose.Types.ObjectId(),
+        name: "deinit",
+        description: "Last state"
+    }
+
+    conversationFlow.states = [firstState, lastState];
+    return [conversationFlow, firstState];
 }
 
 // Actualizar nextStates
@@ -89,10 +96,10 @@ export function updateNextStates(currentState: State, transitions: Transition[])
             nextState = {
                 state: transition.arrivalState,
                 conditions: transition.conditions,
-                available: false
+                available: (!transition.conditions ? true : false)
             }
         }
-        if (nextState)
+        if (nextState.state)
             nextStates.push(nextState);
     })
 
@@ -100,22 +107,23 @@ export function updateNextStates(currentState: State, transitions: Transition[])
 }
 
 // Actualizar index
-export function setConditionValue(nextStates: NextState[], idCondition: string, indexValue: number): NextState[] {
+export function setConditionValue(nextStates: NextState[], values: ConditionIndexUpdate[]) {
     nextStates.forEach(nextState => {
         let orValue = 0;
-        nextState.conditions?.forEach(orCondition => {
+        nextState.conditions?.forEach(orConditions => {
             let andValue = 1;
-            orCondition.forEach(condition => {
-                if (condition.condition._id.toString() == idCondition
-                    && condition.condition.values[indexValue].toString()) {
-                    condition.indexValue = indexValue;
+            orConditions.forEach(condition => {
+                const value = values.find(value => value.idCondition == condition.condition._id.toString());
+                if (value?.idCondition && condition.condition.values[value.indexValue].toString()) {
+                    condition.indexValue = value.indexValue;
                     andValue *= +(condition.indexExpected == condition.indexValue);
-                }
+                } else andValue *= 0;
             })
             orValue += +andValue;
         })
         nextState.available = (orValue ? true : false);
     })
+
     return nextStates;
 }
 
@@ -128,4 +136,12 @@ export function availableStates(nextStates: NextState[]): NextState[] {
     });
 
     return availableNextStates;
+}
+
+// Cambia de estado actual
+export function updateCurrentState(nextStates: NextState[], idState: string): State | undefined {
+    const available = availableStates(nextStates);
+    const nextState = available.find(state => state.state._id.toString() == idState);
+    console.log(available);
+    return nextState?.state;
 }

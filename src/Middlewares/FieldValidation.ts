@@ -54,7 +54,7 @@ export function conditionsValidation(conditions: ConditionValue[][],
 
         for (const conditionObject of orConditions) {
 
-            const { condition, indexExpected } = conditionObject;
+            const { condition, indexExpected, indexValue } = conditionObject;
 
             const currentCondition = currentConditions.find(cond => cond._id.toString() == condition);
 
@@ -63,7 +63,7 @@ export function conditionsValidation(conditions: ConditionValue[][],
                     const conditionPush: ConditionValue = {
                         condition: currentCondition,
                         indexExpected: indexExpected,
-                        indexValue: -1
+                        indexValue: (indexValue ? indexValue : -1)
                     }
                     validOrConditions.push(conditionPush);
                 }

@@ -2,10 +2,10 @@ import { NextState } from './../Interfaces/NextState';
 import { Request, Response } from "express";
 import { idValidation } from "../Middlewares/FieldValidation";
 import accounts from "../Models/Account";
-import { availableStates, setConditionValue, updateNextStates } from "../Middlewares/Functions";
+import { availableStates, setConditionValue, updateCurrentState, updateNextStates } from "../Middlewares/Functions";
+import { ConditionIndexUpdate } from '../Interfaces/ConditionIdIndex';
 
 // Prueba de la función que establece los siguientes estados
-//TODO BORRAR
 export const setNextStates = async (req: Request, res: Response) => {
     try {
         const idAccount = req.params.idAccount;
@@ -23,27 +23,26 @@ export const setNextStates = async (req: Request, res: Response) => {
         const updatedAccount = await account.save();
         return res.status(200).json(updatedAccount.nextStates);
     } catch (error) {
-        console.log(`Error (Controllers/account/testUpdate)`);
+        console.log(`Error (Controllers/account/setNextStates)`);
         console.log(error);
         return res.status(500).send(`Server errro: ${error}`);
     }
 }
 
 // Actualiza el valor del indice de la condicion
-//TODO PRUEBAS
 export const updateConditionValue = async (req: Request, res: Response) => {
     try {
-        const { idAccount, idCondition } = req.params;
-        const indexValue: number = req.body.indexValue;
+        const { idAccount } = req.params;
+        const values: ConditionIndexUpdate[] = req.body.values;
 
-        if (!idValidation(idAccount) || !idValidation(idCondition))
+        if (!idValidation(idAccount))
             return res.status(400).send('Missing required fields');
 
         const account = await accounts.findById(idAccount);
-        if(!account)
-            return res.status(404).send(`Can´t find account by ID`);        
+        if (!account)
+            return res.status(404).send(`Can´t find account by ID`);
 
-        account.nextStates = setConditionValue(account.nextStates, idCondition, indexValue);
+        account.nextStates = setConditionValue(account.nextStates, values);
 
         const updatedAccount = await account.save();
         return res.status(200).json(updatedAccount.nextStates);
@@ -54,7 +53,7 @@ export const updateConditionValue = async (req: Request, res: Response) => {
     }
 }
 
-//TODO funcion para obtener todos los estados disponibles
+// Funcion para obtener todos los estados disponibles
 export const getAvailableStates = async (req: Request, res: Response) => {
     try {
         const idAccount: string = req.params.idAccount;
@@ -63,11 +62,11 @@ export const getAvailableStates = async (req: Request, res: Response) => {
             return res.status(400).send(`Missing required fields`);
 
         const account = await accounts.findById(idAccount);
-        if(!account)
+        if (!account)
             return res.status(404).send(`Can´t find account by ID`);
 
         const nextStates: NextState[] = availableStates(account.nextStates);
-        
+
         return res.status(200).send(nextStates);
     } catch (error) {
         console.log(`Error (Controllers/nextState/getAvailableStates)`);
@@ -76,13 +75,58 @@ export const getAvailableStates = async (req: Request, res: Response) => {
     }
 }
 
-//TODO función para cambiar de estados
+// función para cambiar de estados
 export const changeState = async (req: Request, res: Response) => {
     try {
-        
+        const { idAccount, idState } = req.params;
+
+        if (!idValidation(idAccount) || !idValidation(idState))
+            return res.status(400).send(`Missing required fields`);
+
+        const account = await accounts.findById(idAccount);
+        if (!account)
+            return res.status(404).send(`Can´t find Account by Id`);
+
+        const expectedCurrentState = updateCurrentState(account.nextStates, idState);
+        if (!expectedCurrentState)
+            return res.status(404).send(`Can´t find State by Id`);
+
+        account.currentState = expectedCurrentState;
+        account.nextStates = updateNextStates(account.currentState, account.conversationFlow.transitions);
+
+        const updatedAccount = await account.save();
+        return res.status(200).json(updatedAccount);
     } catch (error) {
         console.log(`Error (Controllers/nextState/changeState)`);
         console.log(error);
         return res.status(500).send(`Server errror: ${error}`);
+    }
+}
+
+// Función para reiniciar el flujo conversacional
+export const resetConversationFlow = async (req: Request, res: Response) => {
+    try {
+        const idAccount = req.params.idAccount;
+        
+        if (!idValidation(idAccount))
+            return res.status(400).send(`Missing requried fields`);
+
+        const account = await accounts.findById(idAccount);
+        if(!account)
+            return res.status(404).send(`Can´t find account by Id`);
+
+        const init = account.conversationFlow.states.find(state => state.name == "init");
+        if (!init)
+            return res.status(400).send(`Init state removed`);
+
+        account.currentState = init;
+
+        const newNextStstes = updateNextStates(account.currentState, account.conversationFlow.transitions);
+        const updatedAccount = await account.save();
+        return res.status(200).json(updatedAccount);
+    } catch (error) {
+        console.log(`Error (Controllers/nextState/resetConversationFlow)`);
+        console.log(error);
+        return res.status(500).send(`Server error: ${error}`);
     }
 }
