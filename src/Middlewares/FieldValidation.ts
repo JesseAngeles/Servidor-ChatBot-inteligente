@@ -1,3 +1,4 @@
+import { Account } from "../Interfaces/Account";
 import { Condition } from "../Interfaces/Condition";
 import { ConditionValue } from "../Interfaces/ConditionValue";
 import { State } from "../Interfaces/State";
@@ -27,6 +28,10 @@ export function phoneValidation(phone: string): boolean {
 export function emailValidation(email: string): boolean {
     const regex = /^[\w\.-]+@[a-zA-Z\d\.-]+\.[a-zA-Z]{2,}$/;
     return regex.test(email);
+}
+
+export function updateDefaultStateValidation(state: State): boolean {
+    return (state.name == `init` || state.name == `deinit` ? false : true);
 }
 
 // Valida que los estados existan y sean diferentes
@@ -128,12 +133,10 @@ export function conditionInUse(transitions: Transition[], idCondition: string): 
 }
 
 export function stateInUse(transitions: Transition[], idState: string): boolean {
-    for (const transition of transitions)
-        if (transition.exitState._id.toString() == idState ||
-            transition.arrivalState._id.toString() == idState) {
-            return true;
-        }
-    return false;
+    return (transitions.find(transition =>
+        transition.exitState._id.toString() == idState ||
+        transition.arrivalState._id.toString() == idState
+    ) ? true : false)
 }
 
 export function updateStateValidation(state: State, name: string, description: string): State {
@@ -142,4 +145,34 @@ export function updateStateValidation(state: State, name: string, description: s
     if (descriptionValidation(description))
         state.description = description;
     return state;
+}
+
+export function updateStateOnCascade(account: Account, state: State): Account {
+    //* account.currentState
+
+    if (account.currentState._id.toString() == state._id.toString())
+        account.currentState = state;
+
+    //* account.nextStates[index].state
+    let index: number | undefined = account.nextStates.findIndex(nextState => nextState.state._id.toString() == state._id.toString());
+    if (index != -1)
+        account.nextStates[index].state = state;
+
+    //* account.covnersationFlow.states[index]
+    index = account.conversationFlow.states.findIndex(currentState => currentState._id.toString() == state._id.toString());
+    if (index != -1)
+        account.conversationFlow.states[index] = state;
+
+    //* account.conversationFlow.transitions[index].exitState
+    //* account.conversationFlow.transitions[index].arrivalState
+    account.conversationFlow.transitions.forEach(transition => {
+        if (transition.exitState._id.toString() == state._id.toString())
+            transition.exitState = state;
+        if (transition.arrivalState._id.toString() == state._id.toString())
+            transition.arrivalState == state;
+    });
+
+    console.log(account.currentState);
+
+    return account;
 }

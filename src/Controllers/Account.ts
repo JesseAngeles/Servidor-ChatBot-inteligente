@@ -34,7 +34,11 @@ export const getAll = async (req: Request, res: Response) => {
     try {
         const fields = req.body.fields;
 
-        const allAccounts = await accounts.find()
+        let allAccounts;
+        if (fields == "all") 
+            allAccounts = await accounts.find(); 
+        else
+            allAccounts = await accounts.find()
             .select(createSelect(fields, availableFields));
 
         return res.status(200).json(allAccounts);

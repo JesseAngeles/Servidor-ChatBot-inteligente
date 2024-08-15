@@ -20,5 +20,3 @@ export const conversationFlowSchema = new Schema<ConversationFlow>({
         required: true
     }]
 })
-
-export default mongoose.model<ConversationFlow>('conversationsFlows', conversationFlowSchema);
