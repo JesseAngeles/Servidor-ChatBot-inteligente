@@ -13,15 +13,18 @@ import { ConditionValue } from "../Interfaces/ConditionValue";
 // Añadir condiciones y estados
 export const addConstraints = async (req: Request, res: Response) => {
     try {
-        const idAccount: String = req.params.idAccount;
+        const idAccount: string = req.params.idAccount;
         const { conditions, states }: { conditions: Condition[], states: State[] } = req.body;
+
+        if (!idValidation(idAccount))
+            return res.status(400).send(`Missing required fields`);
 
         const account = await accounts.findById(idAccount);
         if (!account)
             return res.status(404).send(`Can´t find account by ID`);
 
         if (!conditions || !Array.isArray(conditions) //* conditions es un arreglo
-            || !conditionAsignation(account.conversationFlow.conditions, conditions))
+            || !conditionAsignation(account.conversationFlow.conditions, conditions, account.conversationFlow.transitions))
             return res.status(404).send(`Can´t register empty values`);
 
         if (states && Array.isArray(states)) //* states es un arreglo
@@ -36,43 +39,48 @@ export const addConstraints = async (req: Request, res: Response) => {
     }
 }
 
-// Añadir transiciones
-export const setTransition = async (req: Request, res: Response) => {
+// AÑadir multiples transiciones
+export const setTransitions = async (req: Request, res: Response) => {
     try {
-        const idAccount: String = req.params.idAccount;
-        const { idExit, idArrival, conditions }: {
-            idExit: string, idArrival: string,
-            conditions: ConditionValue[][]
-        } = req.body;
+        const idAccount: string = req.params.idAccount;
+        const transitions: { idExit: string; idArrival: string; conditions: ConditionValue[][] }[] = req.body.transitions;
+
+        if (!idValidation(idAccount) || !transitions || !Array.isArray(transitions))
+            return res.status(400).send(`Missing required fields`);
 
         const account = await accounts.findById(idAccount);
-        if (!account) //* la cuenta existe en la base de datos
-            return res.status(404).send(`Can´t find account by ID`);
+        if (!account)
+            return res.status(404).send(`Can't find Account by ID`);
 
-        //* Validación de estados
-        const [exitState, arrivalState] = statesValidation(account.conversationFlow.states, idExit, idArrival);
-        if (!exitState || !arrivalState)
-            return res.status(400).send(`Can't find exit or arrival state`);
+        for (const transition of transitions) {
+            //* Validación de estados
+            const [exitState, arrivalState]: [State, State] = statesValidation(account.conversationFlow.states, transition.idExit, transition.idArrival);
+            if (!exitState || !arrivalState)
+                continue;
 
-        //* Validación de condiciones y valores
-        const validConditions = (conditions ? conditionsValidation(conditions, account.conversationFlow.conditions) : []);
+            if (exitState.name == `deinit` || arrivalState.name == `deinit`) 
+                continue;
 
-        const transition: Transition = {
-            _id: new mongoose.Types.ObjectId(),
-            exitState: exitState,
-            arrivalState: arrivalState,
-            conditions: validConditions.length > 0 ? validConditions : null
-        };
+            //* Validacion de condiciones y valores
+            const validConditions = (transition.conditions ? conditionsValidation(transition.conditions, account.conversationFlow.conditions) : []);
 
-        // * Verificar si la transición ya existe
-        if (!transitionValidation(transition, account.conversationFlow.transitions))
-            return res.status(400).send('Transition already exists');
+            const newTransition: Transition = {
+                _id: new mongoose.Types.ObjectId,
+                exitState: exitState,
+                arrivalState: arrivalState,
+                conditions: validConditions.length > 0 ? validConditions : null
+            };
 
-        account.conversationFlow.transitions.push(transition);
+            //* Varificar si la transition existe
+            if (!transitionValidation(newTransition, account.conversationFlow.transitions))
+                return res.status(400).send(`Transition already exists`);
+
+            account.conversationFlow.transitions.push(newTransition);
+        }
         const updatedAccount = await account.save();
-        return res.status(200).json(updatedAccount.conversationFlow);
+        return res.status(200).send(updatedAccount.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/setTransition)`);
+        console.error(`Error (Controllers/ConversationFlow/setTransitions)`);
         console.log(error);
         return res.status(500).send(`Server error: ${error}`);
     }
@@ -111,7 +119,7 @@ export const updateCondition = async (req: Request, res: Response) => {
         //* Encontrar la condicion a actualizar
         const indexCondition = account.conversationFlow.conditions.findIndex(condition => condition._id.toString() === idCondition);
         if (indexCondition === -1)
-            return res.status(404).send('State not found');
+            return res.status(404).send('Condition not found');
 
         //* Validación si la condicion no esta en uso
         if (conditionInUse(account.conversationFlow.transitions, idCondition))
@@ -127,7 +135,7 @@ export const updateCondition = async (req: Request, res: Response) => {
         return res.status(200).json(updatedCondition.conversationFlow);
     } catch (error) {
         console.error(`Error (Controllers/ConversationFlow/updateCondition)`);
-        console.log(error);        
+        console.log(error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
@@ -147,7 +155,7 @@ export const updateState = async (req: Request, res: Response) => {
 
         //* Encontrar el estado a actualizar
         const state: State | undefined = account.conversationFlow.states.find(state => state._id.toString() == idState);
-        if (!state) 
+        if (!state)
             return res.status(404).send(`Can´t find State by ID`);
 
         if (!updateDefaultStateValidation(state))
@@ -155,7 +163,7 @@ export const updateState = async (req: Request, res: Response) => {
 
         //* Actualizar estado
         if (nameValidation(name)) state.name = name;
-        if (descriptionValidation(description)) state.description = description; 
+        if (descriptionValidation(description)) state.description = description;
 
         //* Actualizar los estados en cascada
         updateStateOnCascade(account, state);
@@ -178,12 +186,12 @@ export const deleteCondition = async (req: Request, res: Response) => {
 
         const account = await accounts.findById(idAccount);
         if (!account)
-            return res.status(404).send(`Can´t find account by ID`);
+            return res.status(404).send(`Can´t find Account by ID`);
 
         //* Validacion si existe la condicion
         const conditionIndex = constraintExists(account.conversationFlow.conditions, idCondition, "");
         if (conditionIndex < 0)
-            return res.status(404).send(`Can´t find condition by ID`);
+            return res.status(404).send(`Can´t find Condition by ID`);
 
         //* Validación si la condicion no esta en uso
         if (conditionInUse(account.conversationFlow.transitions, idCondition))
@@ -233,7 +241,7 @@ export const deleteState = async (req: Request, res: Response) => {
     }
 }
 
-// Eliminar transiciones
+// Eliminar transiciones on cascade
 export const deleteTransition = async (req: Request, res: Response) => {
     try {
         const { idAccount, idTransition } = req.params;
@@ -245,10 +253,19 @@ export const deleteTransition = async (req: Request, res: Response) => {
         if (!account)
             return res.status(404).send(`Can´t find account by ID`);
 
-        //* Vaidación si la transicion existe
-        const transitionIndex = transitionExists(account.conversationFlow.transitions, idTransition);
-        if (transitionIndex < 0)
-            return res.status(400).send(`Can´t find transition by ID`);
+        if (account.currentState.name != `init` && account.currentState.name != `deinit`)
+            return res.status(400).send(`Can´t delete transition meanwhile Account.currentState isn't in init or deinit State`);
+
+        //* Obtener transition
+        const transition = account.conversationFlow.transitions.find(transition => transition._id.toString() == transition._id.toString());
+        const transitionIndex = account.conversationFlow.transitions.findIndex(transition => transition._id.toString() == transition._id.toString());
+        if (transitionIndex == -1)
+            return res.status(404).send(`Can't find Transition by ID`);
+
+        //* Borrar si esta en NextStates
+        const nextStateIndex = account.nextStates.findIndex(nextState => nextState.state._id.toString() == transition?.arrivalState._id.toString())
+        if (nextStateIndex == -1)
+            account.nextStates.splice(nextStateIndex, 1);
 
         account.conversationFlow.transitions.splice(transitionIndex, 1);
         const updatedAccount = await account.save();

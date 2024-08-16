@@ -2,8 +2,8 @@ import { NextState } from './../Interfaces/NextState';
 import { Request, Response } from "express";
 import { idValidation } from "../Middlewares/FieldValidation";
 import accounts from "../Models/Account";
-import { availableStates, setConditionValue, updateCurrentState, updateNextStates } from "../Middlewares/Functions";
-import { ConditionIndexUpdate } from '../Interfaces/ConditionIdIndex';
+import { availableStates, setConditionValue, setConditionValueOnCascade, updateCurrentState, updateNextStates } from "../Middlewares/Functions";
+import { ConditionIndexInput } from '../Interfaces/ConditionIndexInput';
 
 // Prueba de la función que establece los siguientes estados
 export const setNextStates = async (req: Request, res: Response) => {
@@ -33,7 +33,7 @@ export const setNextStates = async (req: Request, res: Response) => {
 export const updateConditionValue = async (req: Request, res: Response) => {
     try {
         const { idAccount } = req.params;
-        const values: ConditionIndexUpdate[] = req.body.values;
+        const values: ConditionIndexInput[] = req.body.values;
 
         if (!idValidation(idAccount))
             return res.status(400).send('Missing required fields');
@@ -42,7 +42,11 @@ export const updateConditionValue = async (req: Request, res: Response) => {
         if (!account)
             return res.status(404).send(`Can´t find account by ID`);
 
+        //* Actualiza nextStates
         account.nextStates = setConditionValue(account.nextStates, values);
+
+        //* Actualizar en cascada
+        account.conversationFlow.transitions = setConditionValueOnCascade(account.conversationFlow.transitions, values);
 
         const updatedAccount = await account.save();
         return res.status(200).json(updatedAccount.nextStates);

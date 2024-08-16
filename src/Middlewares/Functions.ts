@@ -4,7 +4,8 @@ import { ConversationFlow } from "../Interfaces/ConversationFlow";
 import { State } from "../Interfaces/State";
 import { Transition } from "../Interfaces/Transition";
 import { NextState } from "../Interfaces/NextState";
-import { ConditionIndexUpdate } from "../Interfaces/ConditionIdIndex";
+import { ConditionIndexInput } from "../Interfaces/ConditionIndexInput";
+import { conditionInUse } from "./FieldValidation";
 
 // Función para generar cadena de selección en mongoose
 export function createSelect(required: { [key: string]: boolean },
@@ -21,14 +22,13 @@ export function createSelect(required: { [key: string]: boolean },
 }
 
 // Función para asignar las condiciones en el conversationFlow
-export function conditionAsignation(currentConditions: Condition[], newConditions: Condition[]): Condition[] {
-    const currentConditionNames = new Set(currentConditions.map(condition => condition.name));
-
+export function conditionAsignation(currentConditions: Condition[], newConditions: Condition[], transitions: Transition[]): Condition[] {
     for (const newCondition of newConditions) {
         const newConditionValues = new Set(newCondition.values.map(value => value));
         let currentCondition = currentConditions.find(condition => condition.name === newCondition.name);
 
-        if (currentCondition) {//* Si la condición ya existe, agregar nuevos valores evitando duplicados
+        //* Si la condicion ya existe y no esta en uso, agregar nuevos valores evitando duplicados
+        if (currentCondition && !conditionInUse(transitions, currentCondition?._id)) {
             const currentValuesSet = new Set(currentCondition.values);
             newCondition.values.forEach(newValue => {
                 if (!currentValuesSet.has(newValue)) {
@@ -99,6 +99,17 @@ export function updateNextStates(currentState: State, transitions: Transition[])
                 available: (!transition.conditions ? true : false)
             }
         }
+
+        let orValue = 0;
+        transition.conditions?.forEach(orCondition => {
+            let andValue = 1;
+            orCondition.forEach(condition => {
+                andValue *= +(condition.indexExpected == condition.indexValue);
+            })
+            orValue += +andValue;
+        })
+        nextState.available = (orValue || !nextState.conditions ? true : false);
+
         if (nextState.state)
             nextStates.push(nextState);
     })
@@ -107,7 +118,7 @@ export function updateNextStates(currentState: State, transitions: Transition[])
 }
 
 // Actualizar index
-export function setConditionValue(nextStates: NextState[], values: ConditionIndexUpdate[]) {
+export function setConditionValue(nextStates: NextState[], values: ConditionIndexInput[]) {
     nextStates.forEach(nextState => {
         let orValue = 0;
         nextState.conditions?.forEach(orConditions => {
@@ -124,7 +135,23 @@ export function setConditionValue(nextStates: NextState[], values: ConditionInde
         nextState.available = (orValue ? true : false);
     })
 
+
     return nextStates;
+}
+
+// Actualiza los index's en conversationFLow
+export function setConditionValueOnCascade(transitions: Transition[], values: ConditionIndexInput[]): Transition[] {
+    transitions.forEach(transition => {
+        transition.conditions?.forEach(orConditions => {
+            orConditions.forEach(condition => {
+                const value = values.find(value => value.idCondition == condition.condition._id.toString());
+                if (value?.idCondition && condition.condition.values[value.indexValue].toString())
+                    condition.indexValue = value.indexValue;
+            })
+        })
+    })
+
+    return transitions;
 }
 
 // OBtener estados disponibles
@@ -142,6 +169,5 @@ export function availableStates(nextStates: NextState[]): NextState[] {
 export function updateCurrentState(nextStates: NextState[], idState: string): State | undefined {
     const available = availableStates(nextStates);
     const nextState = available.find(state => state.state._id.toString() == idState);
-    console.log(available);
     return nextState?.state;
 }

@@ -168,11 +168,11 @@ export function updateStateOnCascade(account: Account, state: State): Account {
     account.conversationFlow.transitions.forEach(transition => {
         if (transition.exitState._id.toString() == state._id.toString())
             transition.exitState = state;
-        if (transition.arrivalState._id.toString() == state._id.toString())
-            transition.arrivalState == state;
-    });
+        if (transition.arrivalState._id.toString() == state._id.toString()) 
+            transition.arrivalState = state;
+        
+    })
 
-    console.log(account.currentState);
 
     return account;
 }
