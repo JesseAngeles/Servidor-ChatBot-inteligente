@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 import users from "../Models/User";
-import { testMessage } from "../Middlewares/Bayes";
+import { bayesToString, testMessage } from "../Middlewares/Bayes";
 import { idValidation, nameValidation, phoneValidation, emailValidation } from "../Middlewares/FieldValidation";
 import { createSelect } from "../Middlewares/Functions";
+import { getResponse } from "../Services/OpenAi";
+import { Bayes } from "../Interfaces/Bayes";
+import { ChatCompletionMessageParam } from "openai/resources";
 
 const availableFields = { _id: true, name: true, phone: true, email: true };
 
@@ -116,10 +119,21 @@ export const drop = async (req: Request, res: Response) => {
 export const test = async (req: Request, res: Response) => {
     try {
         const { message } = req.body;
-        const bayesTest = testMessage(message);
-        return res.status(200).json(bayesTest);
+        const bayes: Bayes = testMessage(message);
+        const messages: Array<ChatCompletionMessageParam> = [
+            { role: "system", content: "Analize the feelings" },
+            {
+                role: "user",
+                content: message,
+            },
+        ]
+        console.log(bayesToString(bayes));
+        
+        //getResponse(messages);
+        return res.status(200).json(bayes);
     } catch (error) {
-        console.log("Error", error);
+        console.error(`Error (Controllers/test)`);
+        console.log(error);
         return res.status(500).send('Error en prueba test: ' + error);
     }
 }

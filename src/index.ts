@@ -11,6 +11,7 @@ import routerUser from './Routes/User';
 import routerAccount from './Routes/Account';
 import routerConversationFlow from './Routes/ConversationFlow';
 import routerNextStates from './Routes/NextStates';
+import routerConversation from './Routes/Conversation';
 
 dotenv.config();
 connectDB();
@@ -42,6 +43,7 @@ app.use('/user', routerUser);
 app.use('/account', routerAccount);
 app.use('/conversationFlow', routerConversationFlow);
 app.use('/nextStates', routerNextStates);
+app.use('/conversation', routerConversation);
 
 // Iniciar el servidor
 app.listen(port, () => {

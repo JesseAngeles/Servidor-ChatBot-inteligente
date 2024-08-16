@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import { getBayesData } from '..';
+import { Bayes } from '../Interfaces/Bayes';
 
 const csv = require('csv-parser');
 
@@ -21,7 +22,7 @@ export function processCSV(filePath: string): Promise<any[]> {
     });
 }
 
-export function testMessage(message: string): Object {
+export function testMessage(message: string): Bayes {
     const data: any[] = getBayesData();
     const words = message.split(/\s+/);
 
@@ -61,4 +62,11 @@ export function testMessage(message: string): Object {
     }
 
     return averages;
+}
+
+export function bayesToString(bayes: Bayes): string {
+    let bayesString: string = "";
+    for (const [key, value] of Object.entries(bayes)) 
+        bayesString += `${key.toString().slice(0, -1)}: ${value * 100}% \n`;
+    return bayesString;
 }
