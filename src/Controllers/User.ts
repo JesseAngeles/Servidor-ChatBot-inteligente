@@ -1,30 +1,26 @@
 import { Request, Response } from "express";
 import users from "../Models/User";
-import { bayesToString, testMessage } from "../Middlewares/Bayes";
-import { idValidation, nameValidation, phoneValidation, emailValidation } from "../Middlewares/FieldValidation";
+import { idValidation, nameValidation } from "../Middlewares/FieldValidation";
 import { createSelect } from "../Middlewares/Functions";
-import { getResponse } from "../Services/OpenAi";
-import { Bayes } from "../Interfaces/Bayes";
-import { ChatCompletionMessageParam } from "openai/resources";
 
-const availableFields = { _id: true, name: true, phone: true, email: true };
+const availableFields = { _id: true, name: true};
 
 // Crear nuevo usuario 
 export const add = async (req: Request, res: Response) => {
     try {
-        const { name, phone, email, fields } = req.body
+        const { name, fields } = req.body;
 
-        if (!nameValidation(name) || !phoneValidation(phone) || emailValidation(email))
+        if (!nameValidation(name))
             return res.status(400).send('Missing required fields');
 
-        const newUser = new users({ name, phone, email });
+        const newUser = new users({ name });
         const addUser = await newUser.save();
         const returnUser = await users.findById(addUser._id)
             .select(createSelect(fields, availableFields));
-
         return res.status(200).json(returnUser);
     } catch (error) {
-        console.error(`Error (Controllers/user/add): ${error}`);
+        console.error(`Error (Controllers/user/add)`);
+        console.log(error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
@@ -39,7 +35,8 @@ export const getAll = async (req: Request, res: Response) => {
 
         return res.status(200).json(allUsers);
     } catch (error) {
-        console.error(`Error (Controllers/user/getAll): ${error}`);
+        console.error(`Error (Controllers/user/getAll)`);
+        console.log(error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
@@ -57,11 +54,12 @@ export const getUser = async (req: Request, res: Response) => {
             .select(createSelect(fields, availableFields));
 
         if (!user)
-            return res.status(404).send('User not found');
+            return res.status(404).send('Can´t find User by Id');
 
         return res.status(200).json(user);
     } catch (error) {
-        console.error(`Error (Controllers/user/getUser): ${error}`);
+        console.error(`Error (Controllers/user/getUser)`);
+        console.log(error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
@@ -70,18 +68,16 @@ export const getUser = async (req: Request, res: Response) => {
 export const update = async (req: Request, res: Response) => {
     try {
         const id: string = req.params.id;
-        const { name, phone, email, fields } = req.body;
+        const { name, fields } = req.body;
 
         if (!idValidation(id))
             return res.status(400).send('Missing required fields');
 
         const user = await users.findById(id).select(availableFields);
         if (!user)
-            return res.status(404).send("User not found");
+            return res.status(404).send("Can´t find User by Id");
 
         if (nameValidation(name)) user.name = name;
-        if (phoneValidation(phone)) user.phone = phone;
-        if (emailValidation(email)) user.email = email;
 
         const updateUser = await user.save();
         const returnUser = await users.findById(updateUser._id)
@@ -89,7 +85,8 @@ export const update = async (req: Request, res: Response) => {
 
         return res.status(200).json(returnUser);
     } catch (error) {
-        console.error(`Error (Controllers/user/update): ${error}`);
+        console.error(`Error (Controllers/user/update)`);
+        console.log(error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
@@ -104,36 +101,14 @@ export const drop = async (req: Request, res: Response) => {
             return res.status(400).send('Missing required fields');
 
         const user = await users.findById(id);
-        if (!user) return res.status(404).send("User not found");
+        if (!user) return res.status(404).send("CAn´t find User by Id");
 
         await users.findByIdAndDelete(id)
             .select(createSelect(fields, availableFields));
         return res.status(200).json(user);
     } catch (error) {
-        console.error(`Error (Controllers/user/drop): ${error}`);
-        return res.status(500).send(`Server error: ${error}`);
-    }
-}
-
-//! Probar mensaje
-export const test = async (req: Request, res: Response) => {
-    try {
-        const { message } = req.body;
-        const bayes: Bayes = testMessage(message);
-        const messages: Array<ChatCompletionMessageParam> = [
-            { role: "system", content: "Analize the feelings" },
-            {
-                role: "user",
-                content: message,
-            },
-        ]
-        console.log(bayesToString(bayes));
-        
-        //getResponse(messages);
-        return res.status(200).json(bayes);
-    } catch (error) {
-        console.error(`Error (Controllers/test)`);
+        console.error(`Error (Controllers/user/drop)`);
         console.log(error);
-        return res.status(500).send('Error en prueba test: ' + error);
+        return res.status(500).send(`Server error: ${error}`);
     }
 }

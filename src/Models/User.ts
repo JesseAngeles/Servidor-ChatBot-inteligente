@@ -1,5 +1,6 @@
 import { User } from './../Interfaces/User';
 import mongoose from 'mongoose';
+import { ConversationSchema } from './Conversation';
 
 const { Schema } = mongoose;
 
@@ -8,16 +9,10 @@ const user = new Schema<User>({
     type: Schema.Types.String,
     required: true
   },
-  phone: {
-    type: Schema.Types.String,
-    unique: true,
-    required: true
-  },
-  email: {
-    type: Schema.Types.String,
-    unique: true,
-    required: true
-  }
+  conversations: [{
+    type: ConversationSchema,
+    required: false
+  }]
 });
 
 export default mongoose.model<User>('users', user);

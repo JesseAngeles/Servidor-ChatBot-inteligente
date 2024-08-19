@@ -6,6 +6,4 @@ export interface Account {
     name: string;
     context: string;
     conversationFlow: ConversationFlow;
-    currentState: State;
-    nextStates: NextState[];
 }

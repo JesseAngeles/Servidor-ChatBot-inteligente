@@ -68,22 +68,24 @@ export function stateAsignation(currentStates: State[], newStates: State[]): Sta
 }
 
 // Función para inicilizar el flujo conversacional y el estado inicial
-export function initConversationFlow(): [ConversationFlow, State] {
+export function initConversationFlow(): ConversationFlow {
     const conversationFlow: ConversationFlow = Object(null);
     const firstState: State = {
         _id: new mongoose.Types.ObjectId(),
         name: "init",
-        description: "First state"
+        description: "First state",
+        prompts: null
     }
 
     const lastState: State = {
         _id: new mongoose.Types.ObjectId(),
         name: "deinit",
-        description: "Last state"
+        description: "Last state",
+        prompts: null
     }
 
     conversationFlow.states = [firstState, lastState];
-    return [conversationFlow, firstState];
+    return conversationFlow;
 }
 
 // Actualizar nextStates

@@ -17,16 +17,8 @@ export const accountSchema = new Schema<Account>({
     },
     conversationFlow: {
         type: conversationFlowSchema,
-        required: true,
-    },
-    currentState: {
-        type: stateSchema,
         required: true
-    },
-    nextStates: [{
-        type: nextStateSchema,
-        required: true
-    }]
+    }
 })
 
 export default mongoose.model<Account>('accounts', accountSchema);

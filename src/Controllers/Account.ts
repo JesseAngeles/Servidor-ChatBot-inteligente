@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import accounts from "../Models/Account";
-import { createSelect, initConversationFlow, updateNextStates } from "../Middlewares/Functions";
+import { createSelect, initConversationFlow } from "../Middlewares/Functions";
 import { NextState } from "../Interfaces/NextState";
 import { contextValidation, idValidation, nameValidation } from "../Middlewares/FieldValidation";
 
@@ -10,13 +10,12 @@ const availableFields = { name: true, context: true, currentState: true, nextSta
 export const add = async (req: Request, res: Response) => {
     try {
         const { name, context, fields } = req.body;
-        const [conversationFlow, currentState] = initConversationFlow();
-        const nextStates: NextState[] = [];
-
+        const conversationFlow = initConversationFlow();
+        
         if (!nameValidation(name) || !contextValidation(context))
             return res.status(400).send('Missing required fields');
 
-        const newAccount = new accounts({ name, context, conversationFlow, currentState, nextStates });
+        const newAccount = new accounts({ name, context, conversationFlow });
         const addAccount = await newAccount.save();
         const returnAccount = await accounts.findById(addAccount._id)
             .select(createSelect(fields, availableFields));
@@ -61,7 +60,7 @@ export const getAccount = async (req: Request, res: Response) => {
         const account = await accounts.findById(id)
             .select(createSelect(fields, availableFields));
         if (!account)
-            return res.status(404).send('Account not found');
+            return res.status(404).send('Can´t find Account by Id');
 
         return res.status(200).json(account);
     } catch (error) {
@@ -82,7 +81,7 @@ export const update = async (req: Request, res: Response) => {
             return res.status(400).send('Missing required fields');
 
         const account = await accounts.findById(id).select(availableFields);
-        if (!account) return res.status(404).send("Account not found");
+        if (!account) return res.status(404).send("Can´t find Account by Id");
 
         if (nameValidation(name)) account.name = name;
         if (contextValidation(context)) account.context = context;
@@ -109,7 +108,7 @@ export const drop = async (req: Request, res: Response) => {
 
         const account = await accounts.findById(id);
         if (!account)
-            return res.status(404).send("Account not found");
+            return res.status(404).send("Can´t find Account by Id");
 
         await accounts.findByIdAndDelete(id)
             .select(createSelect(fields, availableFields));
