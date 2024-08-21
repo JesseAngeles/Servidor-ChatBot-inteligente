@@ -80,7 +80,7 @@ export const update = async (req: Request, res: Response) => {
 
         if (nameValidation(name)) user.name = name;
         const information = aditionalInformationValidation(aditionalInformation);
-        if(information) user.information = information;
+        if(information.length > 0) user.information = information;
 
         const updateUser = await user.save();
         const returnUser = await users.findById(updateUser._id)

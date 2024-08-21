@@ -3,11 +3,10 @@ import { add, drop, getAll, getUser, update } from "../Controllers/User";
 
 const routerUser = Router();
 
-//CRUD de Users
-routerUser.post('', add);
-routerUser.get('', getAll);
+routerUser.post('', add);           //name, aditionalInformation
+routerUser.get('', getAll);         
 routerUser.get('/:id', getUser);
-routerUser.put('/:id', update);
+routerUser.put('/:id', update);     //name, aditionalInformation
 routerUser.delete('/:id', drop);
 
 export default routerUser;
