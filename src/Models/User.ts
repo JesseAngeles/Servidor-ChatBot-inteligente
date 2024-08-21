@@ -9,6 +9,11 @@ const user = new Schema<User>({
     type: Schema.Types.String,
     required: true
   },
+  information: [{
+    type: Schema.Types.Map,
+    of: Schema.Types.String,
+    required: false
+  }],
   conversations: [{
     type: ConversationSchema,
     required: false

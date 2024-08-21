@@ -2,10 +2,36 @@ import { NextState } from './../Interfaces/NextState';
 import { Request, Response } from "express";
 import { idValidation } from "../Middlewares/FieldValidation";
 import accounts from "../Models/Account";
+import users from "../Models/User";
 import { availableStates, setConditionValue, setConditionValueOnCascade, updateCurrentState, updateNextStates } from "../Middlewares/Functions";
 import { ConditionIndexInput } from '../Interfaces/ConditionIndexInput';
+import { Conversation } from '../Interfaces/Conversation';
 
-// Prueba de la función que establece los siguientes estados
+export const getAll = async (req: Request, res: Response) => {
+    try {
+        const {idUser, idAccount} = req.params;
+
+        if(!idValidation(idUser) || !idValidation(idAccount))
+            return res.status(400).send(`Missing required fields`);
+
+        const user = await users.findById(idUser);
+        const account = await accounts.findById(idAccount);
+        if (!user || !account)
+            return res.status(404).send(`Can´t find User or Account by Id`);
+
+        const conversation = user.conversations?.find(conversation => conversation.account == account);
+        if (!conversation)
+            return res.status(404).send(`Can´t find conversation between User and Account`);
+        
+        return res.status(200).json(conversation.nextStates);
+    } catch (error) {
+        console.error(`Error (Controllers/NextStates/getAll)`);
+        console.log(error);
+        return res.status(500).send(`internal server error: ${error}`);        
+    }
+}
+
+//! Prueba de la función que establece los siguientes estados
 export const setNextStates = async (req: Request, res: Response) => {
     try {
         const idAccount = req.params.idAccount;
@@ -29,7 +55,7 @@ export const setNextStates = async (req: Request, res: Response) => {
     }
 }
 
-// Actualiza el valor del indice de la condicion
+//! Actualiza el valor del indice de la condicion
 export const updateConditionValue = async (req: Request, res: Response) => {
     try {
         const { idAccount } = req.params;
@@ -57,7 +83,7 @@ export const updateConditionValue = async (req: Request, res: Response) => {
     }
 }
 
-// Funcion para obtener todos los estados disponibles
+//! Funcion para obtener todos los estados disponibles
 export const getAvailableStates = async (req: Request, res: Response) => {
     try {
         const idAccount: string = req.params.idAccount;
@@ -79,7 +105,7 @@ export const getAvailableStates = async (req: Request, res: Response) => {
     }
 }
 
-// función para cambiar de estados
+//! función para cambiar de estados
 export const changeState = async (req: Request, res: Response) => {
     try {
         const { idAccount, idState } = req.params;
@@ -107,7 +133,7 @@ export const changeState = async (req: Request, res: Response) => {
     }
 }
 
-// Función para reiniciar el flujo conversacional
+//! Función para reiniciar el flujo conversacional
 export const resetConversationFlow = async (req: Request, res: Response) => {
     try {
         const idAccount = req.params.idAccount;

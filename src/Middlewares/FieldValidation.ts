@@ -34,6 +34,21 @@ export function updateDefaultStateValidation(state: State): boolean {
     return (state.name == `init` || state.name == `deinit` ? false : true);
 }
 
+export function userInformationValidation(information: any[]): {[key: string]: string}[] {
+    const informationReturn: {[key: string]: string}[] = [];
+    
+    if (information && Array.isArray(information)) {
+        information.forEach(info => {
+            if (typeof info === 'object' && info !== null && !Array.isArray(info)) {
+                informationReturn.push(info as {[key: string]: string});
+            }
+        });
+    }
+    
+    return informationReturn;
+}
+
+
 // Valida que los estados existan y sean diferentes
 export function statesValidation(states: State[], idExit: string, idArrival: string): [any, any] {
     let flagCounter: number = 0;
@@ -168,9 +183,9 @@ export function updateStateOnCascade(account: Account, state: State): Account {
     account.conversationFlow.transitions.forEach(transition => {
         if (transition.exitState._id.toString() == state._id.toString())
             transition.exitState = state;
-        if (transition.arrivalState._id.toString() == state._id.toString()) 
+        if (transition.arrivalState._id.toString() == state._id.toString())
             transition.arrivalState = state;
-        
+
     })
 
 

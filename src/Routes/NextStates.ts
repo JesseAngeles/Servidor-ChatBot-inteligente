@@ -3,10 +3,11 @@ import { changeState, getAvailableStates, resetConversationFlow, setNextStates, 
 
 const routerNextStates = Router();
 
-routerNextStates.put('/:idAccount', setNextStates);
-routerNextStates.put('/:idAccount/conditions', updateConditionValue);
-routerNextStates.get("/:idAccount/states", getAvailableStates);
-routerNextStates.put("/:idAccount/state/:idState", changeState);
-routerNextStates.patch("/:idAccount/reset", resetConversationFlow);
+routerNextStates.get('/:idUser/:idAccount', getAll);
+routerNextStates.put('/:idUser/:idAccount', setNextStates);
+routerNextStates.put('/:idUser/:idAccount/conditions', updateConditionValue);
+routerNextStates.get("/:idUser/:idAccount/states", getAvailableStates);
+routerNextStates.put("/:idUser/:idAccount/state/:idState", changeState);
+routerNextStates.patch("/:idUser/:idAccount/reset", resetConversationFlow);
 
 export default routerNextStates;

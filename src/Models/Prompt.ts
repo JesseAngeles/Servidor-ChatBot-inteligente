@@ -10,6 +10,7 @@ export const promptSchema = new Schema<Prompt>({
     },
     variables: [{
         type: Schema.Types.Map,
-        of: String
+        of: Schema.Types.String,
+        required: false
     }]
 })
