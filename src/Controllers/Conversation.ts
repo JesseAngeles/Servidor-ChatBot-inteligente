@@ -4,7 +4,7 @@ import accounts from "../Models/Account";
 import { idValidation } from "../Middlewares/FieldValidation";
 import { Conversation } from "../Interfaces/Conversation";
 import { State } from "../Interfaces/State";
-import { getNextStates, initMessages } from "../Middlewares/Conversation";
+import { conversationExists, getNextStates, initMessages } from "../Middlewares/Conversation";
 
 // Función para crear relacion Usuer-Account
 export const setConversationWith = async (req: Request, res: Response) => {
@@ -67,14 +67,11 @@ export const getConversation = async (req: Request, res: Response) => {
 
         const user = await users.findById(idUser);
         const account = await accounts.findById(idAccount);
-        if (!user || !account)
-            return res.status(404).send(`Can´t find User or Account by Id`);
+        const [exist, result] = conversationExists(user, account);
+        if (!exist)
+            return res.status(404).send(`${result}`);
 
-        const conversation = user.conversations?.find(conversation => conversation.account == account);
-        if (!conversation)
-            return res.status(404).send(`Can´t find conversation beetween the User and Account`);
-
-        return res.status(200).json(conversation);
+        return res.status(200).json(result);
     } catch (error) {
         console.error(`Error (Controllers/Conversation/getConversation)`);
         console.log(error);

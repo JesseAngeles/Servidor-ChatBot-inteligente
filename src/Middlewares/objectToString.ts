@@ -1,7 +1,7 @@
 import { Account } from "../Interfaces/Account";
+import { Bayes } from "../Interfaces/Bayes";
 import { User } from "../Interfaces/User";
 
-//TODO pruebas
 export function userToString(user: User): string {
     let message: string = `Information: \n`;
     message += `name: ${user.name}, `;
@@ -16,10 +16,18 @@ export function userToString(user: User): string {
     return message;
 }
 
-// TODO pruebas
 export function accountToString(account: Account): string {
     let message: string = `Information: \n`;
     message += `name: ${account.name}, `;
     message += `context: ${account.context}, `;
+    return message;
+}
+
+export function bayesToString(bayes: Bayes): string {
+    let message: string = "Information \n";
+    for (const key in bayes) 
+        if (bayes.hasOwnProperty(key)) 
+            message += `${key.slice(0, -1)}: ${bayes[key as keyof Bayes]}% \n`;
+
     return message;
 }

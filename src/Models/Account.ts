@@ -15,6 +15,11 @@ export const accountSchema = new Schema<Account>({
         type: Schema.Types.String,
         required: true
     },
+    information: [{
+        type: Schema.Types.Map,
+        of: Schema.Types.String,
+        required: false
+    }],
     conversationFlow: {
         type: conversationFlowSchema,
         required: true

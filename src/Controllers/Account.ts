@@ -1,21 +1,23 @@
 import { Request, Response } from "express";
 import accounts from "../Models/Account";
-import { createSelect, initConversationFlow } from "../Middlewares/Functions";
-import { NextState } from "../Interfaces/NextState";
-import { contextValidation, idValidation, nameValidation } from "../Middlewares/FieldValidation";
+import { createSelect } from "../Middlewares/Functions";
+import { aditionalInformationValidation, contextValidation, idValidation, nameValidation } from "../Middlewares/FieldValidation";
+import { initConversationFlow } from "../Middlewares/Account";
 
-const availableFields = { name: true, context: true, currentState: true, nextStates: true };
+const availableFields = { name: true, context: true, inforamtion: true };
 
 // Crear una nueva cuenta
 export const add = async (req: Request, res: Response) => {
     try {
-        const { name, context, fields } = req.body;
+        const { name, context, aditionalInformation, fields } = req.body;
         const conversationFlow = initConversationFlow();
-        
+        const information = aditionalInformationValidation(aditionalInformation);
+
+
         if (!nameValidation(name) || !contextValidation(context))
             return res.status(400).send('Missing required fields');
 
-        const newAccount = new accounts({ name, context, conversationFlow });
+        const newAccount = new accounts({ name, context, information, conversationFlow });
         const addAccount = await newAccount.save();
         const returnAccount = await accounts.findById(addAccount._id)
             .select(createSelect(fields, availableFields));
@@ -34,11 +36,11 @@ export const getAll = async (req: Request, res: Response) => {
         const fields = req.body.fields;
 
         let allAccounts;
-        if (fields == "all") 
-            allAccounts = await accounts.find(); 
+        if (fields == "all")
+            allAccounts = await accounts.find();
         else
             allAccounts = await accounts.find()
-            .select(createSelect(fields, availableFields));
+                .select(createSelect(fields, availableFields));
 
         return res.status(200).json(allAccounts);
     } catch (error) {
@@ -74,7 +76,7 @@ export const getAccount = async (req: Request, res: Response) => {
 export const update = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
-        const { name, context } = req.body;
+        const { name, context, aditionalInformation } = req.body;
         const fields = req.body.fields;
 
         if (!idValidation(id))
@@ -85,6 +87,8 @@ export const update = async (req: Request, res: Response) => {
 
         if (nameValidation(name)) account.name = name;
         if (contextValidation(context)) account.context = context;
+        const information = aditionalInformationValidation(aditionalInformation);
+        if(information) account.information = information;
 
         const updatedAccount = await account.save();
         const returnAccount = await accounts.findById(updatedAccount._id)

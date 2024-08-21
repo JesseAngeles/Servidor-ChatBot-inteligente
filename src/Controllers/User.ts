@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
 import users from "../Models/User";
-import { idValidation, nameValidation, userInformationValidation } from "../Middlewares/FieldValidation";
+import { idValidation, nameValidation, aditionalInformationValidation } from "../Middlewares/FieldValidation";
 import { createSelect } from "../Middlewares/Functions";
 
-const availableFields = { _id: true, name: true};
+const availableFields = { _id: true, name: true, information: true};
 
 // Crear nuevo usuario 
 export const add = async (req: Request, res: Response) => {
     try {
         const { name, aditionalInformation, fields } = req.body;
-        const information = userInformationValidation(aditionalInformation);
+        const information = aditionalInformationValidation(aditionalInformation);
 
         if (!nameValidation(name))
             return res.status(400).send('Missing required fields');
@@ -79,7 +79,7 @@ export const update = async (req: Request, res: Response) => {
             return res.status(404).send("Can´t find User by Id");
 
         if (nameValidation(name)) user.name = name;
-        const information = userInformationValidation(aditionalInformation);
+        const information = aditionalInformationValidation(aditionalInformation);
         if(information) user.information = information;
 
         const updateUser = await user.save();
