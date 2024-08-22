@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
+import users from "../Models/User";
 import accounts from "../Models/Account";
 import { createSelect } from "../Middlewares/Functions";
 import { aditionalInformationValidation, contextValidation, idValidation, nameValidation } from "../Middlewares/FieldValidation";
-import { initConversationFlow } from "../Middlewares/Account";
+import { accountInUse, initConversationFlow } from "../Middlewares/Account";
 
-const availableFields = { name: true, context: true, inforamtion: true };
+const availableFields = { name: true, context: true, information: true };
 
 // Crear una nueva cuenta
 export const add = async (req: Request, res: Response) => {
@@ -15,7 +16,7 @@ export const add = async (req: Request, res: Response) => {
 
 
         if (!nameValidation(name) || !contextValidation(context))
-            return res.status(400).send('Missing required fields');
+            return res.status(400).send(`Missing required fields`);
 
         const newAccount = new accounts({ name, context, information, conversationFlow });
         const addAccount = await newAccount.save();
@@ -36,7 +37,7 @@ export const getAll = async (req: Request, res: Response) => {
         const fields = req.body.fields;
 
         let allAccounts;
-        if (fields == "all")
+        if (fields == `all`)
             allAccounts = await accounts.find();
         else
             allAccounts = await accounts.find()
@@ -57,12 +58,12 @@ export const getAccount = async (req: Request, res: Response) => {
         const fields = req.body.fields;
 
         if (!idValidation(id))
-            return res.status(400).send('Missing required fields');
+            return res.status(400).send(`Missing required fields`);
 
         const account = await accounts.findById(id)
             .select(createSelect(fields, availableFields));
         if (!account)
-            return res.status(404).send('Can´t find Account by Id');
+            return res.status(404).send(`Can´t find Account by Id`);
 
         return res.status(200).json(account);
     } catch (error) {
@@ -80,15 +81,19 @@ export const update = async (req: Request, res: Response) => {
         const fields = req.body.fields;
 
         if (!idValidation(id))
-            return res.status(400).send('Missing required fields');
+            return res.status(400).send(`Missing required fields`);
 
         const account = await accounts.findById(id).select(availableFields);
-        if (!account) return res.status(404).send("Can´t find Account by Id");
+        if (!account) return res.status(404).send(`Can´t find Account by Id`);
+
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
 
         if (nameValidation(name)) account.name = name;
         if (contextValidation(context)) account.context = context;
         const information = aditionalInformationValidation(aditionalInformation);
-        if(information) account.information = information;
+        if(information.length > 0) account.information = information;
 
         const updatedAccount = await account.save();
         const returnAccount = await accounts.findById(updatedAccount._id)
@@ -108,11 +113,15 @@ export const drop = async (req: Request, res: Response) => {
         const id = req.params.id;
         const fields = req.body.fields;
 
-        if (!idValidation(id)) return res.status(400).send('Missing required fields');
+        if (!idValidation(id)) return res.status(400).send(`Missing required fields`);
 
         const account = await accounts.findById(id);
         if (!account)
-            return res.status(404).send("Can´t find Account by Id");
+            return res.status(404).send(`Can´t find Account by Id`);
+
+        const allUsers = await users.find();
+        if (accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t delete, Account already in Use`);
 
         await accounts.findByIdAndDelete(id)
             .select(createSelect(fields, availableFields));

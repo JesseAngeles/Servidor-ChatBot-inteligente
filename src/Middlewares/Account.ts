@@ -5,6 +5,9 @@ import { ConversationFlow } from "../Interfaces/ConversationFlow";
 import { State } from "../Interfaces/State";
 import { Transition } from "../Interfaces/Transition";
 import { descriptionValidation, nameValidation } from "./FieldValidation";
+import { User } from "../Interfaces/User";
+import { Account } from "../Interfaces/Account";
+import { conversationExists } from "./Conversation";
 
 // Función para inicilizar el flujo conversacional y el estado inicial
 export function initConversationFlow(): ConversationFlow {
@@ -25,6 +28,17 @@ export function initConversationFlow(): ConversationFlow {
 
     conversationFlow.states = [firstState, lastState];
     return conversationFlow;
+}
+
+// Función para saber si account esta en uso
+export function accountInUse(users: User[], account: Account): boolean {
+    for (const user of users) {
+        const [exists, ] = conversationExists(user, account);
+        if(exists)
+            return true;
+    }
+
+    return false;
 }
 
 // Función para asignar las condiciones en el conversationFlow

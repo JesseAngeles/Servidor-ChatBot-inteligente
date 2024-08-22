@@ -40,8 +40,8 @@ function getAvailability(transition: Transition): boolean {
 
 export function initMessages(user: User, account: Account): Message[] {
     const messages: Message[] = [];
-    const content: string = `This is your information: ${accountToString(account)}
-                            This is the user information you are talking with: ${userToString(user)}`;
+    const content: string = `This is your information: ${accountToString(account)}`  + 
+                            `This is the user information you are talking with: ${userToString(user)}`;
 
     const message: Message = {
         from: 'system',
@@ -57,7 +57,7 @@ export function conversationExists(user: User | null, account: Account | null): 
     if (!user || !account)
         return [false, "Can´t find User or Account by Id"];
 
-    const conversation = user.conversations?.find(conversation => conversation.account == account);
+    const conversation = user.conversations?.find(conversation => conversation.account._id.toString() == account._id.toString());
     if (!conversation)
         return [false, "Can´t find conversation between User and Account"];
 

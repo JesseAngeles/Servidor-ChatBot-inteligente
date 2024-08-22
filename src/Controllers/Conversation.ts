@@ -5,6 +5,7 @@ import { idValidation } from "../Middlewares/FieldValidation";
 import { Conversation } from "../Interfaces/Conversation";
 import { State } from "../Interfaces/State";
 import { conversationExists, getNextStates, initMessages } from "../Middlewares/Conversation";
+import mongoose from "mongoose";
 
 // Función para crear relacion Usuer-Account
 export const setConversationWith = async (req: Request, res: Response) => {
@@ -19,17 +20,22 @@ export const setConversationWith = async (req: Request, res: Response) => {
         if (!user || !account)
             return res.status(404).send(`Can´t find User or Account by Id`);
 
+        const [exists, ] = conversationExists(user, account);
+        if(exists)
+            return res.status(400).send(`Conversation already exists`);
+
         const initState: State = account.conversationFlow.states.find(state => state.name == 'init')!;
         const conversation: Conversation = {
+            _id: new mongoose.Types.ObjectId,
             account: account,
             currentState: initState,
-            messages: initMessages(user, account), 
+            messages: initMessages(user, account),
             nextStates: getNextStates(account.conversationFlow, initState)
         }
 
         user.conversations?.push(conversation);
-        const savedUser = await user.save();
-        return res.status(200).json(savedUser);
+        await user.save();
+        return res.status(200).json(conversation);
     } catch (error) {
         console.error(`Error (Controllerss/Conversation/setConversationWith)`);
         console.log(error);
@@ -89,16 +95,17 @@ export const drop = async (req: Request, res: Response) => {
 
         const user = await users.findById(idUser);
         const account = await accounts.findById(idAccount);
-        if (!user || !account)
-            return res.status(404).send(`Can´t find User or Account by Id`);
+        const [exists, result] = conversationExists(user, account);
+        if (!exists)
+            return res.status(404).send(`${result}`);
 
-        const indexConversation = user.conversations?.findIndex(conversation => conversation.account == account);
-        if(indexConversation == -1)
+        const indexConversation = user!.conversations?.findIndex(conversation => conversation.account._id.toString() === account!._id.toString());
+        if (indexConversation == -1)
             return res.status(404).send('Can´t find conversation beetween the User and Account');
 
-        user.conversations?.splice(1, indexConversation);
-        const savedUser = await user.save();
-        return res.status(200).json(savedUser);
+        user!.conversations?.splice(indexConversation!, 1);
+        const savedUser = await user!.save();
+        return res.status(200).json(result);
     } catch (error) {
         console.error(`Error (Controllers/Conversation/drop)`);
         console.log(error);
