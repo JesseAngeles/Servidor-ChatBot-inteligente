@@ -4,11 +4,11 @@ import { addConstraints, setTransitions, getConversation, updateCondition, updat
 const routerConversationFlow = Router();
 
 routerConversationFlow.get('/:id', getConversation);
-routerConversationFlow.post('/:idAccount/constraints', addConstraints);
-routerConversationFlow.post('/:idAccount/transitions', setTransitions);
-routerConversationFlow.put('/:idAccount/condition/:idCondition', updateCondition);
-routerConversationFlow.put('/:idAccount/state/:idState', updateState);
-routerConversationFlow.delete('/:idAccount/condition/:idCondition', deleteCondition);
+routerConversationFlow.post('/:idAccount/constraints', addConstraints);                     // conditions, states
+routerConversationFlow.post('/:idAccount/transitions', setTransitions);                     // idExit, idArrival, conditions
+routerConversationFlow.put('/:idAccount/condition/:idCondition', updateCondition);          // name, values
+routerConversationFlow.put('/:idAccount/state/:idState', updateState);                      // name, description
+routerConversationFlow.delete('/:idAccount/condition/:idCondition', deleteCondition);       
 routerConversationFlow.delete('/:idAccount/state/:idState', deleteState);
 routerConversationFlow.delete('/:idAccount/transition/:idTransition', deleteTransition);
 

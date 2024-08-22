@@ -8,6 +8,7 @@ import { conversationExists, getNextStates, initMessages } from "../Middlewares/
 import mongoose from "mongoose";
 
 // Función para crear relacion Usuer-Account
+//TODO Probar getNextStates
 export const setConversationWith = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;

@@ -15,15 +15,13 @@ export function initConversationFlow(): ConversationFlow {
     const firstState: State = {
         _id: new mongoose.Types.ObjectId(),
         name: "init",
-        description: "First state",
-        prompts: null
+        description: "First state"
     }
 
     const lastState: State = {
         _id: new mongoose.Types.ObjectId(),
         name: "deinit",
-        description: "Last state",
-        prompts: null
+        description: "Last state"
     }
 
     conversationFlow.states = [firstState, lastState];
