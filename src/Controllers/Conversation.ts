@@ -4,11 +4,10 @@ import accounts from "../Models/Account";
 import { idValidation } from "../Middlewares/FieldValidation";
 import { Conversation } from "../Interfaces/Conversation";
 import { State } from "../Interfaces/State";
-import { conversationExists, getNextStates, initMessages } from "../Middlewares/Conversation";
+import { conversationExists, getNextStates, getVariables, initMessages } from "../Middlewares/Conversation";
 import mongoose from "mongoose";
 
 // Función para crear relacion Usuer-Account
-//TODO Probar getNextStates
 export const setConversationWith = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;
@@ -31,7 +30,8 @@ export const setConversationWith = async (req: Request, res: Response) => {
             account: account,
             currentState: initState,
             messages: initMessages(user, account),
-            nextStates: getNextStates(account.conversationFlow, initState)
+            nextStates: getNextStates(account.conversationFlow, initState),
+            variables: getVariables(account.conversationFlow.transitions)
         }
 
         user.conversations?.push(conversation);

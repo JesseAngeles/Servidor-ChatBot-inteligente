@@ -4,7 +4,7 @@ import users from "../Models/User";
 import { NextState } from './../Interfaces/NextState';
 import { ConditionIndexInput } from '../Interfaces/ConditionIndexInput';
 import { idValidation } from "../Middlewares/FieldValidation";
-import { availableStates, conversationExists, setConditionValue, updateCurrentState, updateNextStates } from '../Middlewares/Conversation';
+import { availableStates, conversationExists, setAvailability, setNextStates, setVariables, setVariablesInNextStates, updateCurrentState, updateNextStates } from '../Middlewares/Conversation';
 
 export const getAll = async (req: Request, res: Response) => {
     try {
@@ -63,7 +63,15 @@ export const updateConditionValue = async (req: Request, res: Response) => {
         if (!exist)
             return res.status(404).send(`${result}`);
 
-        result.nextStates = setConditionValue(result.nextStates, values);
+        //* Actualizar variables
+        result.variables = setVariables(result.variables, values);
+
+        //* Actualizar nextStates.conditions
+        result.nextStates = setVariablesInNextStates(result.variables, result.nextStates);
+
+        //* Actualizar availability
+        result.nextStates = setAvailability(result.nextStates);
+        
         await user?.save();
         return res.status(200).json(result.nextStates);
     } catch (error) {
@@ -86,14 +94,22 @@ export const changeState = async (req: Request, res: Response) => {
         if (!exists)
             return res.status(404).send(`${result}`);
 
+        //* Actualizas el estado actual
         const expectedCurrentState = updateCurrentState(result.nextStates, idState);
         if (!expectedCurrentState)
             return res.status(404).send(`Can´t find State by Id`);
 
+        //* Actualiza nextStates
         result.currentState = expectedCurrentState;
-        result.nextStates = updateNextStates(result.currentState, result.account.conversationFlow.transitions);
+        result.nextStates = setNextStates(result.currentState, result.account.conversationFlow.transitions, result.variables);
 
-        await account?.save();
+        //* Actualizar nextStates.conditions
+        result.nextStates = setVariablesInNextStates(result.variables, result.nextStates);
+
+        //* Actualizar availability
+        result.nextStates = setAvailability(result.nextStates);
+
+        await user?.save();
         return res.status(200).json(result);
     } catch (error) {
         console.error(`Error (Controllers/NextState/changeState)`);
@@ -118,10 +134,9 @@ export const  resetConversationFlow = async (req: Request, res: Response) => {
         const init = result.account.conversationFlow.states.find(state => state.name == "init")!;
         result.currentState = init;
 
-        updateNextStates(result.currentState, result.account.conversationFlow.transitions);
+        result.nextStates = updateNextStates(result.currentState, result.account.conversationFlow.transitions);
         await user?.save();
         return res.status(200).json(result);
-    
     } catch (error) {
         console.error(`Error (Controllers/NextState/resetConversationFlow)`);
         console.log(error);

@@ -1,5 +1,6 @@
 import { Account } from "../Interfaces/Account";
 import { ConditionIndexInput } from "../Interfaces/ConditionIndexInput";
+import { ConditionValue } from "../Interfaces/ConditionValue";
 import { Conversation } from "../Interfaces/Conversation";
 import { ConversationFlow } from "../Interfaces/ConversationFlow";
 import { Message } from "../Interfaces/Message";
@@ -12,7 +13,7 @@ import { accountToString, userToString } from "./objectToString";
 export function getNextStates(ConversationFlow: ConversationFlow, currentState: State): NextState[] {
     let nextStates: NextState[] = [];
     ConversationFlow.transitions.forEach(transition => {
-        if (transition.exitState == currentState) {
+        if (transition.exitState._id.toString() === currentState._id.toString()) {
             const nextState = {
                 state: transition.arrivalState,
                 conditions: transition.conditions,
@@ -24,6 +25,19 @@ export function getNextStates(ConversationFlow: ConversationFlow, currentState: 
     })
 
     return nextStates;
+}
+
+export function getVariables(transitions: Transition[]): ConditionValue[] {
+    const variables: ConditionValue[] = [];
+    transitions.forEach(transition => {
+        transition.conditions?.forEach(orCondition => {
+            orCondition.forEach(condition => {
+                variables.push(condition);
+            })
+        })
+    });
+
+    return variables;
 }
 
 function getAvailability(transition: Transition): boolean {
@@ -40,8 +54,8 @@ function getAvailability(transition: Transition): boolean {
 
 export function initMessages(user: User, account: Account): Message[] {
     const messages: Message[] = [];
-    const content: string = `This is your information: ${accountToString(account)}`  + 
-                            `This is the user information you are talking with: ${userToString(user)}`;
+    const content: string = `This is your information: ${accountToString(account)}` +
+        `This is the user information you are talking with: ${userToString(user)}`;
 
     const message: Message = {
         from: 'system',
@@ -76,6 +90,53 @@ export function availableStates(nextStates: NextState[] | null): NextState[] {
     return availableNextStates;
 }
 
+export function setVariables(variables: ConditionValue[] | null, values: ConditionIndexInput[]): ConditionValue[] {
+    if (!variables) return [];
+    variables.forEach(variable => {
+        values.forEach(value => {
+            if (variable.condition._id.toString() === value.idCondition)
+                variable.indexValue = value.indexValue;
+        })
+    })
+
+    return variables;
+}
+
+export function setVariablesInNextStates(variables: ConditionValue[] | null, nextStates: NextState[] | null): NextState[] {
+    if(!nextStates || !variables) return []
+
+    nextStates.forEach(nextState => {
+        nextState.conditions?.forEach(orConditions => {
+            orConditions.forEach(condition => {
+                condition.indexValue = variables.find(variable => variable.condition._id.toString() === condition.condition._id.toString())?.indexValue!;
+                })
+        })
+    })
+
+    return nextStates;
+}
+
+function getAvailabilityNextState(nextState: NextState): boolean {
+    let orValue = 0;
+    nextState.conditions?.forEach(orConditions => {
+        let andValue = 1;
+        orConditions.forEach(condition => {
+            andValue *= +(condition.indexExpected == condition.indexValue);
+        })
+        orValue += +andValue;
+    })
+    return (orValue || !nextState.conditions ? true : false);
+}
+
+export function setAvailability(nextStates: NextState[]): NextState[] {
+    if (!nextStates) return [];
+    nextStates.forEach(nextState => {
+        nextState.available = getAvailabilityNextState(nextState);
+    })
+
+    return nextStates;
+}
+
 export function setConditionValue(nextStates: NextState[] | null, values: ConditionIndexInput[]) {
     if (nextStates)
         nextStates.forEach(nextState => {
@@ -94,6 +155,43 @@ export function setConditionValue(nextStates: NextState[] | null, values: Condit
             nextState.available = (orValue ? true : false);
         })
 
+
+    return nextStates;
+}
+
+export function setNextStates(currentState: State, transitions: Transition[], variables: ConditionValue[] | null): NextState[] {
+    let nextStates: NextState[] = [];
+
+    transitions.forEach(transition => {
+        let nextState: NextState = Object(null);
+        if (transition.exitState._id.toString() === currentState._id.toString()) {
+
+            nextState = {
+                state: transition.arrivalState,
+                conditions: transition.conditions,
+                available: (!transition.conditions ? true : false)
+            }
+            if (variables)
+                nextState.conditions?.forEach(OrConditions => {
+                    OrConditions.forEach(condition => {
+                        condition = variables.find(variable => variable === condition)!;
+                    })
+                })
+        }
+
+        let orValue = 0;
+        transition.conditions?.forEach(orCondition => {
+            let andValue = 1;
+            orCondition.forEach(condition => {
+                andValue *= +(condition.indexExpected == condition.indexValue);
+            })
+            orValue += +andValue;
+        })
+        nextState.available = (orValue || !nextState.conditions ? true : false);
+
+        if (nextState.state)
+            nextStates.push(nextState);
+    })
 
     return nextStates;
 }

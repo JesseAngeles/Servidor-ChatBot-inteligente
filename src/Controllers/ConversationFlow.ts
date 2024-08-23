@@ -104,10 +104,6 @@ export const getConversation = async (req: Request, res: Response) => {
         if (!account)
             return res.status(404).send(`Can´t  find account by ID`);
 
-        const allUsers = await users.find();
-        if(accountInUse(allUsers, account))
-            return res.status(400).send(`Can´t update, Account already in Use`);
-
         return res.status(200).json(account.conversationFlow);
     } catch (error) {
         console.error(`Error (Controllers/ConversationFlow/getConversation)`);

@@ -4,6 +4,7 @@ import { accountSchema } from "./Account";
 import { messageSchema } from "./Message";
 import { nextStateSchema } from "./NextState";
 import { stateSchema } from "./State";
+import { conditionValueSchema } from "./ConditionValue";
 
 const { Schema } = mongoose;
 
@@ -23,6 +24,10 @@ export const ConversationSchema = new Schema<Conversation>({
     currentState: {
         type: stateSchema,
         required: true
-    }
+    },
+    variables: [{
+        type: conditionValueSchema,
+        required: false
+    }]
 })
 
