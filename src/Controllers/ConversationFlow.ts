@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import users from "../Models/User";
 import accounts from "../Models/Account";
 import mongoose from 'mongoose';
 import { Condition } from "../Interfaces/Condition";
@@ -6,7 +7,7 @@ import { State } from "../Interfaces/State";
 import { Transition } from "../Interfaces/Transition";
 import { ConditionValue } from "../Interfaces/ConditionValue";
 import { descriptionValidation, idValidation, nameValidation, updateDefaultStateValidation } from "../Middlewares/FieldValidation";
-import { conditionAsignation, conditionInUse, conditionsValidation, constraintExists, stateAsignation, stateInUse, statesValidation, transitionValidation } from "../Middlewares/Account";
+import { accountInUse, conditionAsignation, conditionInUse, conditionsValidation, constraintExists, stateAsignation, stateInUse, statesValidation, transitionValidation } from "../Middlewares/Account";
 
 
 // Añadir condiciones y estados
@@ -20,7 +21,12 @@ export const addConstraints = async (req: Request, res: Response) => {
 
         const account = await accounts.findById(idAccount);
         if (!account)
-            return res.status(404).send(`Can´t find account by ID`);
+            return res.status(404).send(`Can´t find account by Id`);
+
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
+
 
         if (!conditions || !Array.isArray(conditions) //* conditions es un arreglo
             || !conditionAsignation(account.conversationFlow.conditions, conditions, account.conversationFlow.transitions))
@@ -49,7 +55,11 @@ export const setTransitions = async (req: Request, res: Response) => {
 
         const account = await accounts.findById(idAccount);
         if (!account)
-            return res.status(404).send(`Can't find Account by ID`);
+            return res.status(404).send(`Can't find Account by Id`);
+
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
 
         for (const transition of transitions) {
             //* Validación de estados
@@ -94,6 +104,10 @@ export const getConversation = async (req: Request, res: Response) => {
         if (!account)
             return res.status(404).send(`Can´t  find account by ID`);
 
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
+
         return res.status(200).json(account.conversationFlow);
     } catch (error) {
         console.error(`Error (Controllers/ConversationFlow/getConversation)`);
@@ -114,6 +128,10 @@ export const updateCondition = async (req: Request, res: Response) => {
         const account = await accounts.findById(idAccount);
         if (!account)
             return res.status(404).send('Can´t find account by ID')
+
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
 
         //* Encontrar la condicion a actualizar
         const indexCondition = account.conversationFlow.conditions.findIndex(condition => condition._id.toString() === idCondition);
@@ -152,6 +170,10 @@ export const updateState = async (req: Request, res: Response) => {
         if (!account)
             return res.status(404).send('Can´t find Account by ID');
 
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
+
         //* Encontrar el estado a actualizar
         const state: State | undefined = account.conversationFlow.states.find(state => state._id.toString() == idState);
         if (!state)
@@ -187,6 +209,10 @@ export const deleteCondition = async (req: Request, res: Response) => {
         if (!account)
             return res.status(404).send(`Can´t find Account by ID`);
 
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
+
         //* Validacion si existe la condicion
         const conditionIndex = constraintExists(account.conversationFlow.conditions, idCondition, "");
         if (conditionIndex < 0)
@@ -217,6 +243,10 @@ export const deleteState = async (req: Request, res: Response) => {
         const account = await accounts.findById(idAccount);
         if (!account)
             return res.status(404).send(`Can´t find Account by ID`);
+
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
 
         //* Validación si existe el estado
         const stateIndex = constraintExists(account.conversationFlow.states, idState, "");
@@ -251,6 +281,10 @@ export const deleteTransition = async (req: Request, res: Response) => {
         const account = await accounts.findById(idAccount);
         if (!account)
             return res.status(404).send(`Can´t find account by ID`);
+
+        const allUsers = await users.find();
+        if(accountInUse(allUsers, account))
+            return res.status(400).send(`Can´t update, Account already in Use`);
 
         //* Obtener transition
         const transitionIndex = account.conversationFlow.transitions.findIndex(transition => transition._id.toString() == idTransition);
