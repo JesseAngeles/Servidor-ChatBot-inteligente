@@ -7,7 +7,7 @@ const { Schema } = mongoose;
 export const messageSchema = new Schema<Message>({
     from: {
         type: Schema.Types.String,
-        enum: [`system`, `assitant`, `user`],
+        enum: [`system`, `assistant`, `user`],
         required: true
     },
     content: {

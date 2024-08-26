@@ -31,7 +31,7 @@ export const history = async (req: Request, res: Response) => {
 export const newUserMessage = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;
-        const content: string = req.body.message;
+        const content: string = req.body.content;
 
         if (!idValidation(idUser) || !idValidation(idAccount))
             return res.status(400).send(`Missing required fields`);
@@ -68,7 +68,7 @@ export const newUserMessage = async (req: Request, res: Response) => {
 export const newSystemMessage = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;
-        const content: string = req.body.message;
+        const content: string = req.body.content;
 
         if (!idValidation(idUser) || !idValidation(idAccount))
             return res.status(400).send(`Missing required fields`);
@@ -85,6 +85,8 @@ export const newSystemMessage = async (req: Request, res: Response) => {
             feelings: null,
         }
 
+        result.messages?.push(message);
+        await user?.save();
         return res.status(200).json(message);
     } catch (error) {
         console.error(`Error (Controllers/Message/newSystemMessage)`);
