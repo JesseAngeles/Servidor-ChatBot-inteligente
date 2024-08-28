@@ -4,47 +4,41 @@ import users from "../Models/User";
 import { NextState } from './../Interfaces/NextState';
 import { ConditionIndexInput } from '../Interfaces/ConditionIndexInput';
 import { idValidation } from "../Middlewares/FieldValidation";
-import { availableStates, conversationExists, setAvailability, setNextStates, setVariables, setVariablesInNextStates, updateCurrentState, updateNextStates } from '../Middlewares/Conversation';
+import { getAvailableStates, conversationExists, getConversation, setNextStates, setVariablesInNextStates, updateNextStates, updateVariables, changeCurrentState, updateNextStatesAvailability } from '../Middlewares/Conversation';
+import { Message } from "../Interfaces/Message";
+import { stateToString } from "../Middlewares/objectToString";
+import { Conversation } from "../Interfaces/Conversation";
 
 export const getAll = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;
 
-        if (!idValidation(idUser) || !idValidation(idAccount))
-            return res.status(400).send(`Missing required fields`);
+        const result = await getConversation(idUser, idAccount);
+        if (!result[0])
+            return res.status(result[1]).send(result[2]);
+        const conversation: Conversation = result[2];
 
-        const user = await users.findById(idUser);
-        const account = await accounts.findById(idAccount);
-        const [exist, result] = conversationExists(user, account);
-        if (!exist)
-            return res.status(404).send(`${result}`);
-
-        return res.status(200).json(result.nextStates);
+        return res.status(200).json(conversation.nextStates);
     } catch (error) {
-        console.error(`Error (Controllers/NextStates/getAll)`);
-        console.log(error);
-        return res.status(500).send(`internal server error: ${error}`);
+        console.error(`Error (Controllers/NextStates/getAll)`, error);
+        return res.status(500).send(`Internal server error: ${error}`);
     }
-}
+};
 
-export const getAvailableStates = async (req: Request, res: Response) => {
+
+export const availableStates = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;
 
-        if (!idValidation(idUser) || !idValidation(idAccount))
-            return res.status(400).send(`Missing required fields`);
+        const result = await getConversation(idUser, idAccount);
+        if (!result[0])
+            return res.status(result[1]).send(result[2]);
+        const conversation: Conversation = result[2];
 
-        const user = await users.findById(idUser);
-        const account = await accounts.findById(idAccount);
-        const [exist, result] = conversationExists(user, account);
-        if (!exist)
-            return res.status(404).send(`${result}`);
-
-        const nextStates: NextState[] = availableStates(result.nextStates);
+        const nextStates: NextState[] = getAvailableStates(conversation.nextStates);
         return res.status(200).json(nextStates);
     } catch (error) {
-        console.error(`Error (Controllers/NextState/getAvailableStates)`);
-        console.log(error);
+        console.error(`Error (Controllers/NextState/availableStates)`, error);
         return res.status(500).send(`Internal server error: ${error}`);
     }
 }
@@ -54,26 +48,22 @@ export const updateConditionValue = async (req: Request, res: Response) => {
         const { idUser, idAccount } = req.params;
         const values: ConditionIndexInput[] = req.body.values;
 
-        if (!idValidation(idUser) || !idValidation(idAccount))
-            return res.status(400).send(`Missing required fields`);
-
-        const user = await users.findById(idUser);
-        const account = await accounts.findById(idAccount);
-        const [exist, result] = conversationExists(user, account);
-        if (!exist)
-            return res.status(404).send(`${result}`);
+        const result = await getConversation(idUser, idAccount);
+        if (!result[0])
+            return res.status(result[1]).send(result[2]);
+        const [, user, conversation] = result;
 
         //* Actualizar variables
-        result.variables = setVariables(result.variables, values);
+        conversation.variables = updateVariables(conversation.variables, values);
 
         //* Actualizar nextStates.conditions
-        result.nextStates = setVariablesInNextStates(result.variables, result.nextStates);
+        conversation.nextStates = setVariablesInNextStates(conversation.variables, conversation.nextStates);
 
         //* Actualizar availability
-        result.nextStates = setAvailability(result.nextStates);
-        
+        conversation.nextStates = updateNextStatesAvailability(conversation.nextStates);
+
         await user?.save();
-        return res.status(200).json(result.nextStates);
+        return res.status(200).json(conversation.nextStates);
     } catch (error) {
         console.error(`Error (Controllers/NextState/updateConditionValue)`);
         console.log(error);
@@ -85,32 +75,37 @@ export const changeState = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount, idState } = req.params;
 
-        if (!idValidation(idUser) || !idValidation(idAccount) || !idValidation(idState))
-            return res.status(400).send(`Missing required fields`);
-
-        const user = await users.findById(idUser);
-        const account = await accounts.findById(idAccount);
-        const [exists, result] = conversationExists(user, account);
-        if (!exists)
-            return res.status(404).send(`${result}`);
+        const result = await getConversation(idUser, idAccount);
+        if (!result[0])
+            return res.status(result[1]).send(result[2]);
+        const [, user, conversation] = result;
 
         //* Actualizas el estado actual
-        const expectedCurrentState = updateCurrentState(result.nextStates, idState);
-        if (!expectedCurrentState)
-            return res.status(404).send(`Can´t find State by Id`);
+        const currentState = changeCurrentState(conversation.nextStates, idState);
+        if (!currentState)
+            return res.status(404).send(`Can´t find State in available States`);
+        
+        //* Actualiza current State
+        conversation.currentState = currentState;
 
         //* Actualiza nextStates
-        result.currentState = expectedCurrentState;
-        result.nextStates = setNextStates(result.currentState, result.account.conversationFlow.transitions, result.variables);
+        conversation.nextStates = setNextStates(conversation.currentState, conversation.account.conversationFlow.transitions, conversation.variables);
 
         //* Actualizar nextStates.conditions
-        result.nextStates = setVariablesInNextStates(result.variables, result.nextStates);
+        conversation.nextStates = setVariablesInNextStates(conversation.variables, conversation.nextStates);
 
         //* Actualizar availability
-        result.nextStates = setAvailability(result.nextStates);
+        conversation.nextStates = updateNextStatesAvailability(conversation.nextStates);
+
+        const message: Message = {
+            from: "system",
+            content: stateToString(conversation.currentState),
+            feelings: null
+        }
+        conversation.messages?.push(message);
 
         await user?.save();
-        return res.status(200).json(result);
+        return res.status(200).json(conversation);
     } catch (error) {
         console.error(`Error (Controllers/NextState/changeState)`);
         console.log(error);
@@ -118,17 +113,17 @@ export const changeState = async (req: Request, res: Response) => {
     }
 }
 
-export const  resetConversationFlow = async (req: Request, res: Response) => {
+export const resetConversationFlow = async (req: Request, res: Response) => {
     try {
-        const { idUser, idAccount} = req.params;
+        const { idUser, idAccount } = req.params;
 
-        if(!idValidation(idUser) || !idValidation(idAccount))
+        if (!idValidation(idUser) || !idValidation(idAccount))
             return res.status(400).send(`Missing required fields`);
 
         const user = await users.findById(idUser);
         const account = await accounts.findById(idAccount);
         const [exist, result] = conversationExists(user, account)
-        if(!exist)
+        if (!exist)
             return res.status(404).send(`${result}`);
 
         const init = result.account.conversationFlow.states.find(state => state.name == "init")!;

@@ -4,8 +4,8 @@ import { drop, getAll, getConversation, setConversationWith } from "../Controlle
 const routerConversation = Router();
 
 routerConversation.post('/:idUser/:idAccount', setConversationWith);
-routerConversation.get('/:idUser/:idAccount', getConversation);
 routerConversation.get('/:idUser', getAll);
+routerConversation.get('/:idUser/:idAccount', getConversation);
 routerConversation.delete('/:idUser/:idAccount', drop);
 
 export default routerConversation;

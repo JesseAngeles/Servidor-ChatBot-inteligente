@@ -51,7 +51,7 @@ export const newUserMessage = async (req: Request, res: Response) => {
         result.messages?.push(message);
 
         //* Genenerar respuesta
-        const answer: Message = await generateResponse(result.messages!, result.currentState);
+        const answer: Message = await generateResponse(result.messages!);
         if (answer.content == "Error")
             return res.status(500).send('Can´t process petition');
 
@@ -90,6 +90,29 @@ export const newSystemMessage = async (req: Request, res: Response) => {
         return res.status(200).json(message);
     } catch (error) {
         console.error(`Error (Controllers/Message/newSystemMessage)`);
+        console.log(error);
+        return res.status(500).send(`Internal server error: ${error}`);
+    }
+}
+
+export const deleteHistory = async (req: Request, res: Response) => {
+    try {
+        const { idUser, idAccount} = req.params;
+        if (!idValidation(idUser) || !idValidation(idAccount)) 
+            return res.status(400).send(`Missing required fields`);
+
+        const user = await users.findById(idUser);
+        const account = await accounts.findById(idAccount);
+        const [exists, result] = conversationExists(user, account);
+        if(!exists)
+            return res.status(404).send(`${result}`);
+
+        const history = result.messages;
+        result.messages = [];
+        await user?.save();
+        return res.status(200).json(history);
+    } catch (error) {
+        console.error(`Error (Controllers/Message/deleteHistory)`);
         console.log(error);
         return res.status(500).send(`Internal server error: ${error}`);
     }

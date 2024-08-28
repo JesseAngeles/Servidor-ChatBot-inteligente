@@ -2,7 +2,6 @@ import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { Message } from "../Interfaces/Message";
 import { bayesToString } from "../Middlewares/Bayes";
-import { State } from "../Interfaces/State";
 
 require('dotenv').config();
 
@@ -10,7 +9,7 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-export async function generateResponse(messages: Message[], state: State): Promise<Message> {
+export async function generateResponse(messages: Message[]): Promise<Message> {
     try {
         const chatMessages: Array<ChatCompletionMessageParam> = createChatCompletion(messages);
         const completion = await openai.chat.completions.create({
@@ -18,7 +17,6 @@ export async function generateResponse(messages: Message[], state: State): Promi
             messages: chatMessages
         })
 
-        console.log(completion.choices[0].message);
         const answer: Message = {
             from: completion.choices[0].message.role,
             content: completion.choices[0].message.content!,

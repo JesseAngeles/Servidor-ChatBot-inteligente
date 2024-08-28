@@ -1,75 +1,65 @@
 import { Request, Response } from "express";
 import users from "../Models/User";
-import { idValidation, nameValidation, aditionalInformationValidation } from "../Middlewares/FieldValidation";
-import { createSelect } from "../Middlewares/Functions";
+import { idValidation, nameValidation, additionalInformationValidation } from "../Middlewares/FieldValidation";
 
-const availableFields = { _id: true, name: true, information: true};
+const availableFields = { _id: true, name: true, information: true };
 
-// Crear nuevo usuario 
+// Create new User
 export const add = async (req: Request, res: Response) => {
     try {
-        const { name, aditionalInformation, fields } = req.body;
-        const information = aditionalInformationValidation(aditionalInformation);
+        const { name, aditionalInformation } = req.body;
+        const information = additionalInformationValidation(aditionalInformation);
 
         if (!nameValidation(name))
             return res.status(400).send('Missing required fields');
 
-        const newUser = new users({ name, information });
-        const addUser = await newUser.save();
-        const returnUser = await users.findById(addUser._id)
-            .select(createSelect(fields, availableFields));
+        const user = new users({ name, information });
+        const savedUser = await user.save();
+        const returnUser = await users.findById(savedUser._id).select(availableFields);
         return res.status(200).json(returnUser);
     } catch (error) {
-        console.error(`Error (Controllers/user/add)`);
-        console.log(error);
+        console.error(`Error (Controllers/user/add)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Consultar todos los usuarios
+// Get all users
 export const getAll = async (req: Request, res: Response) => {
     try {
-        const fields = req.body.fields;
-
-        const allUsers = await users.find()
-            .select(createSelect(fields, availableFields));
+        const allUsers = await users.find().select(availableFields);
 
         return res.status(200).json(allUsers);
     } catch (error) {
-        console.error(`Error (Controllers/user/getAll)`);
-        console.log(error);
+        console.error(`Error (Controllers/user/getAll)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Consulta usuario por Id
-export const getUser = async (req: Request, res: Response) => {
+// Get user by id
+export const getById = async (req: Request, res: Response) => {
     try {
-        const id: String = req.params.id;
-        const fields = req.body.fields;
+        const { id } = req.params;
 
         if (!idValidation)
             return res.status(400).send('Missing required fields');
 
-        const user = await users.findById(id)
-            .select(createSelect(fields, availableFields));
+        const user = await users.findById(id).select(availableFields);
 
         if (!user)
             return res.status(404).send('Can´t find User by Id');
 
         return res.status(200).json(user);
     } catch (error) {
-        console.error(`Error (Controllers/user/getUser)`);
-        console.log(error);
+        console.error(`Error (Controllers/user/getUser)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Actualizar la información por ID
+// Update user information by Id
 export const update = async (req: Request, res: Response) => {
     try {
-        const id: string = req.params.id;
-        const { name, aditionalInformation, fields } = req.body;
+        const { id } = req.params;
+        const { name, aditionalInformation } = req.body;
 
         if (!idValidation(id))
             return res.status(400).send('Missing required fields');
@@ -79,39 +69,34 @@ export const update = async (req: Request, res: Response) => {
             return res.status(404).send("Can´t find User by Id");
 
         if (nameValidation(name)) user.name = name;
-        const information = aditionalInformationValidation(aditionalInformation);
-        if(information.length > 0) user.information = information;
+        const information = additionalInformationValidation(aditionalInformation);
+        if (information.length > 0) user.information = information;
 
         const updateUser = await user.save();
-        const returnUser = await users.findById(updateUser._id)
-            .select(createSelect(fields, availableFields));
+        const returnUser = await users.findById(updateUser._id).select(availableFields);
 
         return res.status(200).json(returnUser);
     } catch (error) {
-        console.error(`Error (Controllers/user/update)`);
-        console.log(error);
+        console.error(`Error (Controllers/user/update)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Eliminar información por ID
+// Delete inforamtion by id
 export const drop = async (req: Request, res: Response) => {
     try {
-        const id: string = req.params.id;
-        const fields = req.body.fields;
+        const { id } = req.params;
 
         if (!idValidation(id))
             return res.status(400).send('Missing required fields');
 
-        const user = await users.findById(id);
-        if (!user) return res.status(404).send("CAn´t find User by Id");
+        const user = await users.findByIdAndDelete(id).select(availableFields);
+        if (!user)
+            return res.status(404).send("CAn´t find User by Id");
 
-        await users.findByIdAndDelete(id)
-            .select(createSelect(fields, availableFields));
         return res.status(200).json(user);
     } catch (error) {
-        console.error(`Error (Controllers/user/drop)`);
-        console.log(error);
+        console.error(`Error (Controllers/user/drop)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }

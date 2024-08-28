@@ -3,14 +3,13 @@ import users from "../Models/User";
 import accounts from "../Models/Account";
 import { idValidation } from "../Middlewares/FieldValidation";
 import { Conversation } from "../Interfaces/Conversation";
-import { State } from "../Interfaces/State";
-import { conversationExists, getNextStates, getVariables, initMessages } from "../Middlewares/Conversation";
-import mongoose from "mongoose";
+import { conversationExists, initConversation } from "../Middlewares/Conversation";
 
-// Función para crear relacion Usuer-Account
+// Function to create the conversation User-Account
 export const setConversationWith = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;
+        const { theyKnown } = req.body || false;
 
         if (!idValidation(idUser) || !idValidation(idAccount))
             return res.status(400).send(`Missing required fields`);
@@ -20,31 +19,21 @@ export const setConversationWith = async (req: Request, res: Response) => {
         if (!user || !account)
             return res.status(404).send(`Can´t find User or Account by Id`);
 
-        const [exists, ] = conversationExists(user, account);
-        if(exists)
+        const [exists,] = conversationExists(user, account);
+        if (exists)
             return res.status(400).send(`Conversation already exists`);
 
-        const initState: State = account.conversationFlow.states.find(state => state.name == 'init')!;
-        const conversation: Conversation = {
-            _id: new mongoose.Types.ObjectId,
-            account: account,
-            currentState: initState,
-            messages: initMessages(user, account),
-            nextStates: getNextStates(account.conversationFlow, initState),
-            variables: getVariables(account.conversationFlow.transitions)
-        }
-
+        const conversation: Conversation = await initConversation(user, account, theyKnown);
         user.conversations?.push(conversation);
         await user.save();
         return res.status(200).json(conversation);
     } catch (error) {
-        console.error(`Error (Controllerss/Conversation/setConversationWith)`);
-        console.log(error);
+        console.error(`Error (Controllers/Conversation/setConversationWith)`, error);
         return res.status(500).send(`Internal server error`);
     }
 }
 
-// Obtener todas las conversaciones de un User
+// get all the user conversations
 export const getAll = async (req: Request, res: Response) => {
     try {
         const idUser: string = req.params.idUser;
@@ -64,7 +53,7 @@ export const getAll = async (req: Request, res: Response) => {
     }
 }
 
-// Obtener la conversario entre User y Account
+// Get the conversation between User and Account
 export const getConversation = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;
@@ -86,7 +75,7 @@ export const getConversation = async (req: Request, res: Response) => {
     }
 }
 
-// Eliminar la conversación entre User y Account
+// Delete the conversation between user and Account
 export const drop = async (req: Request, res: Response) => {
     try {
         const { idUser, idAccount } = req.params;

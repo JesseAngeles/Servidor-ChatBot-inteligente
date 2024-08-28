@@ -1,8 +1,4 @@
-import { Account } from "../Interfaces/Account";
-import { Condition } from "../Interfaces/Condition";
-import { ConditionValue } from "../Interfaces/ConditionValue";
 import { State } from "../Interfaces/State";
-import { Transition } from "../Interfaces/Transition";
 
 export function idValidation(id: string): boolean {
     return (id ? true : false);
@@ -30,11 +26,7 @@ export function emailValidation(email: string): boolean {
     return regex.test(email);
 }
 
-export function updateDefaultStateValidation(state: State): boolean {
-    return (state.name == `init` || state.name == `deinit` ? false : true);
-}
-
-export function aditionalInformationValidation(information: any[]): {[key: string]: string}[] {
+export function additionalInformationValidation(information: any[]): {[key: string]: string}[] {
     const informationReturn: {[key: string]: string}[] = [];
     
     if (information && Array.isArray(information)) {
@@ -46,4 +38,8 @@ export function aditionalInformationValidation(information: any[]): {[key: strin
     }
     
     return informationReturn;
+}
+
+export function updateDefaultStateValidation(state: State): boolean {
+    return (state.name == `init` || state.name == `deinit` ? false : true);
 }
