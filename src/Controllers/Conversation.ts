@@ -47,8 +47,7 @@ export const getAll = async (req: Request, res: Response) => {
 
         return res.status(200).json(user.conversations);
     } catch (error) {
-        console.error(`Error (Controllers/Conversation/getAll)`);
-        console.log(error);
+        console.error(`Error (Controllers/Conversation/getAll)`, error);
         return res.status(500).send(`Internal server error`);
     }
 }
@@ -69,8 +68,7 @@ export const getConversation = async (req: Request, res: Response) => {
 
         return res.status(200).json(result);
     } catch (error) {
-        console.error(`Error (Controllers/Conversation/getConversation)`);
-        console.log(error);
+        console.error(`Error (Controllers/Conversation/getConversation)`, error);
         return res.status(500).send(`Internal server error`);
     }
 }
@@ -97,8 +95,7 @@ export const drop = async (req: Request, res: Response) => {
         const savedUser = await user!.save();
         return res.status(200).json(result);
     } catch (error) {
-        console.error(`Error (Controllers/Conversation/drop)`);
-        console.log(error);
+        console.error(`Error (Controllers/Conversation/drop)`, error);
         return res.status(500).send(`Internal server error`);
     }
 }

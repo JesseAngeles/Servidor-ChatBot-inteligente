@@ -31,11 +31,15 @@ export function accountToString(account: Account): string {
 }
 
 export function bayesToString(bayes: Bayes): string {
-    let message: string = "Fellings averages";
-    for (const key in bayes)
-        if (bayes.hasOwnProperty(key))
-            message += `${key.slice(0, -1)}: ${bayes[key as keyof Bayes]}% \n`;
-
+    let message: string = "Fellings averages:";
+    for (const key in bayes) {
+        if (Object.prototype.hasOwnProperty.call(bayes, key)) {
+            const value = bayes[key as keyof Bayes];
+            message += `${key}: ${value}. `
+        }
+    }
+    
+    console.log(message);
     return message;
 }
 

@@ -23,7 +23,6 @@ export async function initConversation(user: User, account: Account, theyKnown: 
     const messages = await initMessages(user, account, theyKnown, variables);
 
     const conversation: Conversation = {
-        _id: mongoose.Types.ObjectId,
         account: account,
         currentState: initState,
         messages: messages,

@@ -63,11 +63,3 @@ export function testMessage(message: string): Bayes {
 
     return averages;
 }
-
-export function bayesToString(bayes: Bayes | null): string {
-    let bayesString: string = "";
-    if(!bayes) return "";
-    for (const [key, value] of Object.entries(bayes)) 
-        bayesString += `${key.toString().slice(0, -1)}: ${value * 100}% \n`;
-    return bayesString;
-}

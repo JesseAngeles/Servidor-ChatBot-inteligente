@@ -7,10 +7,11 @@ import { State } from "../Interfaces/State";
 import { Transition } from "../Interfaces/Transition";
 import { ConditionValue } from "../Interfaces/ConditionValue";
 import { descriptionValidation, idValidation, nameValidation, updateDefaultStateValidation } from "../Middlewares/FieldValidation";
-import { accountInUse, conditionAsignation, conditionInUse, conditionsValidation, constraintExists, stateAsignation, stateInUse, statesValidation, transitionValidation } from "../Middlewares/Account";
+import { accountInUse } from "../Middlewares/Account";
+import { conditionAsignation, conditionInUse, conditionsValidation, constraintExists, stateAsignation, stateInUse, statesValidation, transitionValidation } from "../Middlewares/ConversationFlow";
 
 
-// Añadir condiciones y estados
+// Add conditions and states
 export const addConstraints = async (req: Request, res: Response) => {
     try {
         const idAccount: string = req.params.idAccount;
@@ -27,24 +28,22 @@ export const addConstraints = async (req: Request, res: Response) => {
         if(accountInUse(allUsers, account))
             return res.status(400).send(`Can´t update, Account already in Use`);
 
-
-        if (!conditions || !Array.isArray(conditions) //* conditions es un arreglo
+        if (!conditions || !Array.isArray(conditions)
             || !conditionAsignation(account.conversationFlow.conditions, conditions, account.conversationFlow.transitions))
             return res.status(404).send(`Can´t register empty values`);
 
-        if (states && Array.isArray(states)) //* states es un arreglo
+        if (states && Array.isArray(states)) 
             stateAsignation(account.conversationFlow.states, states);
 
         const updatedAccount = await account.save();
         return res.status(200).json(updatedAccount.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/addConstraints)`);
-        console.log(error);
+        console.error(`Error (Controllers/ConversationFlow/addConstraints)`, error);
         return res.status(500).json(error);
     }
 }
 
-// AÑadir multiples transiciones
+// Add multiple transitions
 export const setTransitions = async (req: Request, res: Response) => {
     try {
         const idAccount: string = req.params.idAccount;
@@ -62,15 +61,12 @@ export const setTransitions = async (req: Request, res: Response) => {
             return res.status(400).send(`Can´t update, Account already in Use`);
 
         for (const transition of transitions) {
-            //* Validación de estados
+            //* state validation
             const [exitState, arrivalState]: [State, State] = statesValidation(account.conversationFlow.states, transition.idExit, transition.idArrival);
-            if (!exitState || !arrivalState)
+            if (!exitState || !arrivalState || exitState.name == 'deinit' || arrivalState.name == 'init')
                 continue;
 
-            if (exitState.name == `deinit` || arrivalState.name == `init`) 
-                continue;
-
-            //* Validacion de condiciones y valores
+            //* conditions and values validation
             const validConditions = (transition.conditions ? conditionsValidation(transition.conditions, account.conversationFlow.conditions) : []);
 
             const newTransition: Transition = {
@@ -80,7 +76,7 @@ export const setTransitions = async (req: Request, res: Response) => {
                 conditions: validConditions.length > 0 ? validConditions : null
             };
 
-            //* Varificar si la transition existe
+            //* check if transition exists
             if (!transitionValidation(newTransition, account.conversationFlow.transitions))
                 continue;
 
@@ -89,13 +85,12 @@ export const setTransitions = async (req: Request, res: Response) => {
         const updatedAccount = await account.save();
         return res.status(200).send(updatedAccount.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/setTransitions)`);
-        console.log(error);
+        console.error(`Error (Controllers/ConversationFlow/setTransitions)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Consultar flujo conversacional 
+// get conversation flow: conditions, states and transitions
 export const getConversation = async (req: Request, res: Response) => {
     try {
         const id: string = req.params.id;
@@ -106,13 +101,11 @@ export const getConversation = async (req: Request, res: Response) => {
 
         return res.status(200).json(account.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/getConversation)`);
-        console.log(error);
+        console.error(`Error (Controllers/ConversationFlow/getConversation)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Actualizar condiciones
 export const updateCondition = async (req: Request, res: Response) => {
     try {
         const { idAccount, idCondition } = req.params;
@@ -129,16 +122,16 @@ export const updateCondition = async (req: Request, res: Response) => {
         if(accountInUse(allUsers, account))
             return res.status(400).send(`Can´t update, Account already in Use`);
 
-        //* Encontrar la condicion a actualizar
+        //* Find condition to update
         const indexCondition = account.conversationFlow.conditions.findIndex(condition => condition._id.toString() === idCondition);
         if (indexCondition === -1)
             return res.status(404).send('Condition not found');
 
-        //* Validación si la condicion no esta en uso
+        //* chek if conditions isn't in use
         if (conditionInUse(account.conversationFlow.transitions, idCondition))
             return res.status(400).send(`Can´t update, condition in use`);
 
-        //* Actualizar la información
+        //* update condition
         if (nameValidation(name))
             account.conversationFlow.conditions[indexCondition].name = name;
         if (values && Array.isArray(values) && values.length > 1)
@@ -147,13 +140,11 @@ export const updateCondition = async (req: Request, res: Response) => {
         const updatedCondition = await account.save();
         return res.status(200).json(updatedCondition.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/updateCondition)`);
-        console.log(error);
+        console.error(`Error (Controllers/ConversationFlow/updateCondition)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Actualizar estados
 export const updateState = async (req: Request, res: Response) => {
     try {
         const { idAccount, idState } = req.params;
@@ -170,7 +161,7 @@ export const updateState = async (req: Request, res: Response) => {
         if(accountInUse(allUsers, account))
             return res.status(400).send(`Can´t update, Account already in Use`);
 
-        //* Encontrar el estado a actualizar
+        //* Find state to update
         const state: State | undefined = account.conversationFlow.states.find(state => state._id.toString() == idState);
         if (!state)
             return res.status(404).send(`Can´t find State by ID`);
@@ -180,20 +171,19 @@ export const updateState = async (req: Request, res: Response) => {
 
         if (stateInUse(account.conversationFlow.transitions, idState))
             return res.status(400).send(`Can´t update, state in use`);
-        //* Actualizar estado
+
+        //* update state
         if (nameValidation(name)) state.name = name;
         if (descriptionValidation(description)) state.description = description;
 
         const updatedState = await account.save();
         return res.status(200).json(updatedState.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/updateState):`);
-        console.log(error);
+        console.error(`Error (Controllers/ConversationFlow/updateState):`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Eliminar condiciones
 export const deleteCondition = async (req: Request, res: Response) => {
     try {
         const { idAccount, idCondition } = req.params;
@@ -209,12 +199,12 @@ export const deleteCondition = async (req: Request, res: Response) => {
         if(accountInUse(allUsers, account))
             return res.status(400).send(`Can´t update, Account already in Use`);
 
-        //* Validacion si existe la condicion
+        //* if conditionexists
         const conditionIndex = constraintExists(account.conversationFlow.conditions, idCondition, "");
         if (conditionIndex < 0)
             return res.status(404).send(`Can´t find Condition by ID`);
 
-        //* Validación si la condicion no esta en uso
+        //* if conditions isn´t in use
         if (conditionInUse(account.conversationFlow.transitions, idCondition))
             return res.status(400).send(`Can´t delete, condition in use`);
 
@@ -222,13 +212,11 @@ export const deleteCondition = async (req: Request, res: Response) => {
         const updatedAccount = await account.save();
         return res.status(200).json(updatedAccount.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/deleteCondition)`);
-        console.log(error);
+        console.error(`Error (Controllers/ConversationFlow/deleteCondition)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Eliminar estados
 export const deleteState = async (req: Request, res: Response) => {
     try {
         const { idAccount, idState } = req.params;
@@ -244,7 +232,7 @@ export const deleteState = async (req: Request, res: Response) => {
         if(accountInUse(allUsers, account))
             return res.status(400).send(`Can´t update, Account already in Use`);
 
-        //* Validación si existe el estado
+        //* if state exists
         const stateIndex = constraintExists(account.conversationFlow.states, idState, "");
         if (stateIndex == -1)
             return res.status(404).send(`Can´t find State by ID`);
@@ -252,7 +240,7 @@ export const deleteState = async (req: Request, res: Response) => {
         if (!updateDefaultStateValidation(account.conversationFlow.states[stateIndex]))
             return res.status(400).send(`Can´t delete default States`);
 
-        //* Validación que no este en uso el estado
+        //* If state is in use
         if (stateInUse(account.conversationFlow.transitions, idState))
             return res.status(400).send(`Can´t delete State in use`);
 
@@ -260,13 +248,11 @@ export const deleteState = async (req: Request, res: Response) => {
         const updatedAccount = await account.save();
         return res.status(200).json(updatedAccount.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/deleteState)`);
-        console.log(error);
+        console.error(`Error (Controllers/ConversationFlow/deleteState)`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }
 
-// Eliminar transiciones on cascade
 export const deleteTransition = async (req: Request, res: Response) => {
     try {
         const { idAccount, idTransition } = req.params;
@@ -282,7 +268,6 @@ export const deleteTransition = async (req: Request, res: Response) => {
         if(accountInUse(allUsers, account))
             return res.status(400).send(`Can´t update, Account already in Use`);
 
-        //* Obtener transition
         const transitionIndex = account.conversationFlow.transitions.findIndex(transition => transition._id.toString() == idTransition);
         if (transitionIndex == -1)
             return res.status(404).send(`Can't find Transition by ID`);
@@ -293,7 +278,7 @@ export const deleteTransition = async (req: Request, res: Response) => {
         const updatedAccount = await account.save();
         return res.status(200).json(updatedAccount.conversationFlow);
     } catch (error) {
-        console.error(`Error (Controllers/ConversationFlow/deleteTransition): ${error}`);
+        console.error(`Error (Controllers/ConversationFlow/deleteTransition):`, error);
         return res.status(500).send(`Server error: ${error}`);
     }
 }

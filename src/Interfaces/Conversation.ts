@@ -5,7 +5,6 @@ import { NextState } from "./NextState";
 import { State } from "./State";
 
 export interface Conversation {
-    _id: any,
     account: Account,
     messages: Message[] | null;
     nextStates: NextState[] | null;
